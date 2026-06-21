@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HealthMe (GLP-1) — Dein personalisierter Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- ============ HMTrack (funnel tracker) ============ -->
+<script src="/track.js"></script>
+<script>
+window.STEP_NAMES={
+  1:'Sexo',2:'Idade',3:'Vídeo intro',4:'Tracking (GIF)',5:'Transformação',
+  6:'Jornada GLP-1',7:'Medicamento',8:'Dose',9:'Frequência',10:'Dificuldade',
+  11:'Scan alimentação',12:'Altura',13:'Peso atual',14:'Peso meta',15:'Mascote meta',
+  16:'3x mais rápido',17:'Resumo pessoal',18:'Previsão de peso',19:'Potencial sucesso',
+  20:'Vídeo prova social',21:'Motivação',22:'Atividade física',23:'Resultados duradouros',
+  24:'Vídeo prova social 2',25:'Companheiro virtual',26:'Transforme resultados',
+  27:'Avaliação',28:'Compromisso',29:'Plano pronto',30:'Depoimentos',31:'Oferta',32:'Checkout'
+};
+HMTrack.init({ projectId:'healthmeai', endpoint:'/api/collect', totalSteps:32 });
+function ans(q,v){ try{ if(window.HMTrack) HMTrack.answer(q,v); }catch(e){} }
+</script>
+<style>
+  :root{
+    --bg:#faf9f5; --card:#ffffff; --ink:#16130c; --muted:#9c9488; --line:#ece7dc;
+    --accent:#caa43a; --accent2:#a37c1f; --gold-l:#e8ce78; --gold-d:#9a7016;
+    --green:#34c759; --green2:#1f9d4d; --orange:#ff9500; --yellow:#ffcc00; --red:#ff3b30; --blue:#5ac8fa;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  *::-webkit-scrollbar{ width:0; height:0; }
+  *{ scrollbar-width:none; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:"Roboto",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+
+  .wrap{ width:100%; max-width:540px; margin:0 auto; min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column; position:relative; background:var(--bg); }
+
+  /* Header */
+  .topbar{ position:sticky; top:0; z-index:20; background:var(--bg); padding:calc(12px + env(safe-area-inset-top)) 20px 8px; }
+  .topbar .row{ display:flex; align-items:center; gap:12px; min-height:34px; }
+  .back{ width:36px; height:36px; border:none; background:none; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink); opacity:.85; flex-shrink:0; }
+  .back svg{ width:22px; height:22px; }
+  .back[disabled]{ opacity:0; pointer-events:none; }
+  .brand{ flex:1; text-align:center; }
+  .brand img{ height:26px; width:auto; vertical-align:middle; opacity:.95; }
+  .topbar .spacer{ width:36px; flex-shrink:0; }
+  .progress{ height:6px; background:#eee7d8; border-radius:6px; margin-top:10px; overflow:hidden; }
+  .progress .bar{ height:100%; width:3%; background:linear-gradient(90deg,var(--gold-l),var(--accent2)); border-radius:6px; transition:width .45s cubic-bezier(.3,.8,.35,1); }
+
+  /* Stage */
+  .stage{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 20px 24px; }
+  .step{ display:none; }
+  .step.active{ display:block; }
+  .step.active > *{ animation:objIn .5s cubic-bezier(.2,.72,.3,1) both; }
+  .step.active > *:nth-child(1){animation-delay:.03s}.step.active > *:nth-child(2){animation-delay:.09s}
+  .step.active > *:nth-child(3){animation-delay:.15s}.step.active > *:nth-child(4){animation-delay:.21s}
+  .step.active > *:nth-child(5){animation-delay:.27s}.step.active > *:nth-child(6){animation-delay:.33s}
+  .step.active > *:nth-child(n+7){animation-delay:.39s}
+  @keyframes objIn{ from{opacity:0; transform:translateY(16px) scale(.99)} to{opacity:1; transform:none} }
+  @media (prefers-reduced-motion: reduce){ .step.active > *{ animation:none !important } }
+
+  h1{ font-size:27px; line-height:1.2; font-weight:900; letter-spacing:-.5px; margin:8px 0 8px; }
+  h2.q{ font-size:23px; font-weight:900; letter-spacing:-.3px; margin:6px 0 18px; }
+  .lead{ color:#6a655c; font-size:15px; line-height:1.5; margin:0 0 22px; }
+  .center{ text-align:center; }
+  .muted{ color:var(--muted); }
+  .gold{ color:var(--accent2); }
+
+  /* Footer / CTA */
+  .footer{ position:sticky; bottom:0; z-index:20; padding:12px 20px calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 70%, transparent); }
+  .cta{ width:100%; border:none; border-radius:16px; padding:18px; font-size:17px; font-weight:800; cursor:pointer;
+    background:linear-gradient(135deg,var(--gold-l),var(--accent2)); color:#fff; box-shadow:0 14px 28px rgba(163,124,31,.32); transition:transform .15s, opacity .2s; }
+  .cta:active{ transform:scale(.99); }
+  .cta:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .cta.dark{ background:linear-gradient(135deg,#2b2620,#16130c); box-shadow:0 14px 28px rgba(0,0,0,.28); }
+  .cta.green{ position:relative; overflow:hidden; background:linear-gradient(135deg,#3ad16a,#1f9d4d); box-shadow:0 14px 30px rgba(31,157,77,.4); }
+  .cta.green::after{ content:""; position:absolute; top:0; bottom:0; left:-75%; width:55%; transform:skewX(-22deg); pointer-events:none;
+    background:linear-gradient(110deg,transparent,rgba(255,255,255,.6),transparent); animation:ctaSweep 2.4s ease-in-out infinite; }
+  @keyframes ctaSweep{ 0%{ left:-75% } 55%,100%{ left:175% } }
+
+  /* Selectable cards (gender / generic) */
+  .cards2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .pcard{ background:var(--card); border:2px solid transparent; border-radius:22px; padding:12px 12px 14px; cursor:pointer;
+    text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.05); transition:.18s; position:relative; }
+  .pcard img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:16px; display:block; background:#f1ead9; }
+  .pcard .lbl{ display:block; margin-top:11px; font-weight:800; font-size:16px; }
+  .pcard.sel{ border-color:var(--accent); box-shadow:0 12px 30px rgba(163,124,31,.18); transform:translateY(-2px); }
+  .pcard .check{ position:absolute; top:18px; right:18px; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:none; align-items:center; justify-content:center; }
+  .pcard.sel .check{ display:flex; } .pcard .check svg{ width:15px; height:15px; }
+
+  /* Age cards (with overlay label) */
+  .cards-age{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .acard{ position:relative; border-radius:20px; overflow:hidden; cursor:pointer; box-shadow:0 6px 20px rgba(255, 255, 255, 0.06); transition:.18s; background-color:#2f7fd1; aspect-ratio:1/1.18; }
+  .acard img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
+  .acard .tag{ position:absolute; left:0; right:0; bottom:0; background:linear-gradient(to top, rgba(18,14,6,.72), rgba(18,14,6,.12) 72%, transparent); color:#fff; font-weight:800; font-size:14px; padding:26px 14px 12px; display:flex; align-items:center; justify-content:space-between; text-shadow:0 1px 3px rgba(0,0,0,.4); z-index:2; }
+  .acard .tag svg{ width:16px; height:16px; }
+  .acard.sel{ transform:translateY(-2px); box-shadow:0 0 0 3px var(--accent), 0 12px 30px rgba(163,124,31,.25); }
+
+  /* Option list (radio) */
+  .opts{ display:flex; flex-direction:column; gap:11px; }
+  .opt{ display:flex; align-items:center; gap:13px; background:var(--card); border:1.5px solid var(--line); border-radius:16px;
+    padding:16px 16px; cursor:pointer; transition:.16s; font-size:15.5px; font-weight:600; }
+  .opt .rdo{ width:22px; height:22px; border-radius:50%; border:2px solid #d8d0bf; flex-shrink:0; position:relative; transition:.16s; }
+  .opt.sel{ border-color:var(--accent); background:#fdf8ea; }
+  .opt.sel .rdo{ border-color:var(--accent); }
+  .opt.sel .rdo::after{ content:""; position:absolute; inset:4px; border-radius:50%; background:var(--accent); }
+  .opt .oi{ width:26px; height:26px; flex-shrink:0; color:var(--accent2); display:flex; align-items:center; justify-content:center; }
+  .opt .oi svg{ width:22px; height:22px; }
+  .opt input.other{ display:none; width:100%; margin-top:10px; border:none; border-bottom:1.5px solid var(--line); background:none; font-size:14px; padding:6px 2px; outline:none; }
+  .opt.sel input.other.show{ display:block; }
+  #dose-opts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  #dose-opts .opt{ padding:14px 14px; font-size:15px; }
+  #dose-opts .opt.full{ grid-column:1 / -1; }
+
+  /* Chips multi-select */
+  .chips{ display:flex; flex-direction:column; gap:10px; }
+  .chip{ display:flex; align-items:center; gap:11px; background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:14px 15px; cursor:pointer; font-size:15px; font-weight:600; transition:.16s; }
+  .chip .ck{ width:22px; height:22px; border-radius:7px; border:2px solid #d8d0bf; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; transition:.16s; }
+  .chip .ck svg{ width:14px; height:14px; opacity:0; }
+  .chip.sel{ border-color:var(--accent); background:#fdf8ea; }
+  .chip.sel .ck{ background:var(--accent); border-color:var(--accent); } .chip.sel .ck svg{ opacity:1; }
+
+  /* Segmented + big number */
+  .seg-wrap{ text-align:center; }
+  .segment{ background:#efe7d4; border-radius:13px; padding:4px; display:inline-flex; gap:2px; margin:0 0 18px; }
+  .segment button{ border:none; background:none; font-weight:800; font-size:14px; color:#8a8170; padding:9px 24px; border-radius:10px; cursor:pointer; transition:.15s; }
+  .segment button.on{ background:#fff; color:var(--ink); box-shadow:0 2px 6px rgba(0,0,0,.1); }
+  .bignum{ display:flex; align-items:baseline; justify-content:center; gap:8px; margin:8px 0 4px; }
+  .bignum input{ width:170px; border:none; background:none; text-align:right; font-size:56px; font-weight:900; letter-spacing:-1px; color:var(--ink); outline:none; -moz-appearance:textfield; }
+  .bignum input::-webkit-outer-spin-button,.bignum input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .bignum .u{ font-size:20px; font-weight:800; color:var(--muted); }
+  .slider{ -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:5px; background:#e7ddc9; outline:none; margin:18px 0 22px; }
+  .slider::-webkit-slider-thumb{ -webkit-appearance:none; width:30px; height:30px; border-radius:50%; background:#fff; border:4px solid var(--accent); cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,.18); }
+  .slider::-moz-range-thumb{ width:26px; height:26px; border-radius:50%; background:#fff; border:4px solid var(--accent); cursor:pointer; }
+
+  /* Note boxes */
+  .note{ border-radius:16px; padding:16px; display:flex; gap:11px; align-items:flex-start; }
+  .note.neutral{ background:#f3f0ea; } .note.warn{ background:#fdf2dc; } .note.good{ background:#eef6e6; }
+  .note .ni{ flex-shrink:0; width:22px; height:22px; } .note .ni svg{ width:22px; height:22px; }
+  .note.warn .ni{ color:#c8930a; } .note.good .ni{ color:var(--green2); } .note.neutral .ni{ color:#8a8170; }
+  .note .nt{ font-weight:800; font-size:14.5px; margin:0 0 4px; }
+  .note .nd{ color:#6f6a60; font-size:13px; line-height:1.5; margin:0; }
+
+  /* Media */
+  .media{ margin:0 auto 20px; max-width:300px; }
+  .video-slot{ width:100%; display:flex; align-items:center; justify-content:center; border-radius:20px; overflow:hidden; box-shadow:0 14px 34px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08); }
+  .video-slot vturb-smartplayer{ border-radius:20px; overflow:hidden; }
+  .gif{ width:52%; max-width:290px; display:block; margin:0 auto 20px; border-radius:46px; background:#f1ead9; box-shadow:0 14px 34px rgba(0,0,0,.1); }
+
+  /* Antes/Depois (etapa 5) */
+  .transform{ position:relative; width:62%; max-width:270px; margin:14px auto 22px; aspect-ratio:38/56; padding-top:40px; }
+  .t-img{ position:absolute; top:40px; left:0; right:0; bottom:0; width:100%; height:calc(100% - 40px); object-fit:contain; object-position:center bottom;
+    filter:drop-shadow(0 16px 22px rgba(120,80,20,.18)); opacity:0; transform:scale(.8) translateY(12px);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.3,.8,.35,1), filter .5s; }
+  .t-img.show{ opacity:1; transform:scale(1) translateY(0); }
+  .t-img.back{ opacity:0; transform:scale(.6) translateY(-8px); filter:blur(4px) drop-shadow(0 16px 22px rgba(120,80,20,.1)); }
+  .t-spin{ position:absolute; top:calc(50% + 20px); left:50%; transform:translate(-50%,-50%); width:62px; height:62px; opacity:0; transition:opacity .3s; color:var(--accent2); z-index:2; }
+  .t-spin.show{ opacity:1; }
+  .t-spin svg{ width:100%; height:100%; animation:tSpin 1s linear infinite; }
+  @keyframes tSpin{ to{ transform:rotate(360deg) } }
+  .t-label{ position:absolute; top:2px; left:50%; transform:translateX(-50%); z-index:3; font-size:11px; font-weight:900; letter-spacing:.6px; padding:4px 13px; border-radius:14px; color:#fff; box-shadow:0 4px 10px rgba(0,0,0,.12); transition:.3s; }
+  .t-label.before{ background:#e0726b; } .t-label.process{ background:var(--accent2); } .t-label.after{ background:var(--green2); }
+  .palm{ text-align:center; font-size:22px; font-weight:900; letter-spacing:-.3px; margin:6px 0 8px; }
+
+  /* Mascot */
+  .mascot{ text-align:center; padding-top:8px; }
+  .mascot img{ width:160px; height:auto; margin:6px auto 18px; display:block; filter:drop-shadow(0 16px 24px rgba(180,120,20,.22)); animation:floatY 3s ease-in-out infinite; }
+  @keyframes floatY{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  .mascot h1{ font-size:25px; }
+  .mascot h1 b{ color:var(--accent2); }
+  .mini-note{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:15px; margin-top:20px; font-size:13.5px; color:#5a5650; line-height:1.55; text-align:left; display:flex; gap:10px; align-items:flex-start; }
+  .mini-note svg{ width:20px; height:20px; flex-shrink:0; color:var(--accent2); }
+  .mini-note{ position:relative; z-index:3; }
+
+  /* Cena fita + canetas (etapa 15) */
+  .pen-scene{ position:relative; height:360px; margin-top:-6px; z-index:0; pointer-events:none; }
+  .pen-scene::after{ content:""; position:absolute; left:-10px; right:-10px; bottom:0; height:185px; background:linear-gradient(to top, var(--bg) 6%, transparent); z-index:6; }
+  .pen-scene .fita{ position:absolute; left:1%; top:-26px; width:50%; opacity:0; transform:rotate(-5deg); filter:drop-shadow(0 8px 14px rgba(0,0,0,.12)); z-index:1; }
+  .pen-scene .pen{ position:absolute; }
+  .pen-scene .pen img{ display:block; width:100%; opacity:0; transform:rotate(var(--rot,0deg)) scale(.5); filter:drop-shadow(0 14px 18px rgba(0,0,0,.18)); }
+  .pen-scene .c1{ left:25%; top:44px; width:64%; z-index:3; }
+  .pen-scene .c2{ left:16%; top:130px; width:66%; z-index:4; }
+  .pen-scene .c3{ right:2%; top:82px; width:17.5%; z-index:5; }
+  .pen-scene.run .fita{ animation:fitaWipe 1s ease both; }
+  .pen-scene.run .c1 img{ animation:penPop .6s cubic-bezier(.2,.9,.3,1.25) .9s both; }
+  .pen-scene.run .c2 img{ animation:penPop .6s cubic-bezier(.2,.9,.3,1.25) 1.4s both; }
+  .pen-scene.run .c3 img{ animation:penPop .55s cubic-bezier(.2,.9,.3,1.25) 1.9s both; }
+  .pen-scene.run .c1{ animation:floatPen 3.4s ease-in-out 1.6s infinite; }
+  .pen-scene.run .c2{ animation:floatPen 3.9s ease-in-out 2.1s infinite; }
+  .pen-scene.run .c3{ animation:floatPen 3.1s ease-in-out 2.6s infinite; }
+  @keyframes fitaWipe{ from{ opacity:.2; clip-path:inset(0 100% 0 0); } to{ opacity:1; clip-path:inset(0 0 0 0); } }
+  @keyframes penPop{ 0%{ opacity:0; transform:rotate(var(--rot,0deg)) scale(.5); } 60%{ opacity:1; } 100%{ opacity:1; transform:rotate(var(--rot,0deg)) scale(1); } }
+  @keyframes floatPen{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-9px); } }
+  @media (prefers-reduced-motion: reduce){ .pen-scene .fita{ opacity:1; } .pen-scene .pen img{ opacity:1; transform:rotate(var(--rot,0deg)); } .pen-scene .pen, .pen-scene .pen img, .pen-scene .fita{ animation:none !important; } }
+
+  /* Card */
+  .card{ background:var(--card); border-radius:24px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.05); margin-bottom:16px; }
+  .ctitle{ display:flex; align-items:center; gap:11px; margin-bottom:16px; }
+  .ctitle .ic{ width:38px; height:38px; border-radius:12px; background:#f4f0e6; display:flex; align-items:center; justify-content:center; color:var(--accent2); }
+  .ctitle .ic svg{ width:20px; height:20px; } .ctitle h3{ margin:0; font-size:17px; font-weight:900; }
+
+  /* Comparison 3x */
+  .compare{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:end; }
+  .col{ text-align:center; } .col .lab{ font-size:12px; font-weight:800; color:var(--muted); margin-bottom:8px; }
+  .col .lab.g{ color:var(--accent2); }
+  .box{ border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .box.gray{ background:#efeae0; height:120px; } .box.gray .p{ font-size:28px; font-weight:900; color:#a59c8c; } .box.gray .s{ font-size:11px; color:#b1a896; }
+  .box.dark{ background:linear-gradient(135deg,var(--gold-l),var(--accent2)); height:172px; color:#fff; } .box.dark .big{ font-size:44px; font-weight:900; } .box.dark .s{ font-size:12px; opacity:.9; }
+  .compare .box{ overflow:hidden; transition:height 1.1s cubic-bezier(.25,.85,.35,1), filter 1.1s ease; }
+  .compare:not(.run) .box{ height:0; filter:saturate(.3) brightness(1.06); }
+
+  /* BMI scale */
+  .scale{ height:12px; border-radius:8px; background:linear-gradient(90deg,#4aa3ff 0%,#34c759 28%,#ffcc00 50%,#ff9500 72%,#ff3b30 100%); position:relative; margin:30px 2px 8px; }
+  .scale .mk{ position:absolute; top:50%; width:22px; height:22px; border-radius:50%; background:#fff; border:5px solid var(--accent); transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,.2); }
+  .scale .lbl{ position:absolute; bottom:24px; transform:translateX(-50%); background:var(--accent2); color:#fff; font-size:11px; font-weight:800; padding:3px 9px; border-radius:14px; white-space:nowrap; }
+  .scale .lbl::after{ content:""; position:absolute; left:50%; bottom:-4px; transform:translateX(-50%); border:4px solid transparent; border-top-color:var(--accent2); }
+  .scale-cat{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:4px; }
+  .tag{ display:inline-block; font-size:11px; font-weight:900; letter-spacing:.4px; padding:5px 11px; border-radius:14px; }
+  .tag.warn{ background:#fff4d6; color:#b07b00; } .tag.ok{ background:#e7f7ec; color:var(--green2); }
+  .bmi-row{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .bmi-lab{ font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.4px; }
+  .bmi-val{ font-size:32px; font-weight:900; margin:2px 0 7px; }
+  .sum-grid{ display:flex; gap:14px; align-items:center; margin-top:18px; }
+  .sum-list{ flex:1; } .sum-list .r{ margin-bottom:13px; } .sum-list .r:last-child{ margin:0; }
+  .sum-list .k{ font-size:12px; color:var(--muted); } .sum-list .v{ font-size:16px; font-weight:800; display:flex; align-items:center; gap:7px; margin-top:1px; }
+  .sum-list .v svg{ width:17px; height:17px; color:var(--accent2); }
+  .sum-img{ width:140px; height:220px; object-fit:contain; object-position:center bottom; flex-shrink:0; }
+
+  /* Charts */
+  .chartbox{ height:230px; position:relative; }
+  .chartlbl{ display:flex; gap:16px; justify-content:center; margin-top:12px; font-size:12px; font-weight:700; }
+  .chartlbl span{ display:flex; align-items:center; gap:6px; color:var(--muted); }
+  .chartlbl i{ width:14px; height:4px; border-radius:3px; display:inline-block; }
+
+  /* Animated bars (transform results) */
+  .bars .b{ margin-bottom:14px; } .bars .b:last-child{ margin:0; }
+  .bars .bl{ font-size:13px; font-weight:700; margin-bottom:7px; }
+  .bars .track{ display:flex; gap:8px; align-items:center; }
+  .bars .bar{ height:24px; border-radius:8px; position:relative; display:flex; align-items:center; }
+  .bars .bar.sem{ background:#e9e3d6; width:0; transition:width 1s ease; }
+  .bars .bar.com{ background:linear-gradient(90deg,#2b2620,#16130c); width:0; transition:width 1.1s ease; }
+  .bars .bar b{ position:absolute; right:9px; font-size:11px; font-weight:900; color:#fff; }
+  .bars .bar.sem b{ color:#8a8170; }
+  .bars .lg{ display:flex; gap:14px; font-size:11px; color:var(--muted); margin-bottom:12px; font-weight:700; }
+  .bars .lg i{ width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px; }
+
+  /* Rings (plan) */
+  @property --p{ syntax:'<number>'; inherits:false; initial-value:0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:14px; }
+  .mcard{ background:#fff; border-radius:22px; padding:16px; box-shadow:0 8px 22px rgba(0,0,0,.05); }
+  .mhead{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .mhead .mi{ width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
+  .mhead .mi svg{ width:18px; height:18px; }
+  .mhead .mt{ font-weight:900; font-size:14.5px; line-height:1.1; } .mhead .ms{ font-size:11px; color:var(--muted); margin-top:1px; }
+  .ring{ width:100px; height:100px; border-radius:50%; margin:2px auto; display:flex; align-items:center; justify-content:center; position:relative; --p:0; --c:var(--accent); background:conic-gradient(var(--c) calc(var(--p)*1%), #eee7d8 0); transition:--p 1.3s cubic-bezier(.25,.85,.35,1); }
+  .ring::before{ content:""; position:absolute; inset:11px; background:#fff; border-radius:50%; }
+  .ring b{ position:relative; z-index:1; font-size:21px; font-weight:900; }
+  .glass{ width:74px; height:92px; margin:2px auto; border:3px solid #e2e8ee; border-top:none; border-radius:0 0 14px 14px; position:relative; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; }
+  .glass .fill{ position:absolute; left:0; right:0; bottom:0; height:0; background:#d6ecfa; transition:height 1.3s cubic-bezier(.25,.85,.35,1); }
+  .glass b{ position:relative; z-index:1; font-size:20px; font-weight:900; padding-bottom:16px; }
+  .pbar{ height:9px; border-radius:6px; background:#eee7d8; margin-top:11px; overflow:hidden; }
+  .pbar i{ display:block; height:100%; width:0; background:var(--green); border-radius:6px; transition:width 1.3s cubic-bezier(.25,.85,.35,1); }
+  .tl-track{ height:6px; background:#eee7d8; border-radius:6px; position:relative; margin:10px 6px 14px; }
+  .tl-track .a{ position:absolute; left:0; top:50%; transform:translate(-2px,-50%); width:16px; height:16px; border-radius:50%; background:#fff; border:4px solid var(--accent); }
+  .tl-track .b{ position:absolute; right:0; top:50%; transform:translate(2px,-50%); width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #cdc3ad; }
+
+  /* Sources */
+  .src{ display:flex; align-items:center; gap:12px; padding:13px 2px; border-top:1px solid var(--line); }
+  .src:first-of-type{ border-top:none; } .src .doc{ color:#a39c8c; } .src .doc svg{ width:21px; height:21px; }
+  .src .a{ font-weight:800; font-size:14px; } .src .bb{ font-size:12px; color:var(--muted); } .src .chev{ color:#cdc3ad; margin-left:auto; }
+
+  /* Testimonials */
+  .testi{ display:flex; gap:12px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:12px; box-shadow:0 6px 18px rgba(0,0,0,.04); }
+  .testi img{ width:54px; height:54px; border-radius:14px; object-fit:cover; flex-shrink:0; background:#f1ead9; }
+  .testi .q{ font-size:13.5px; line-height:1.5; color:#3f3b34; }
+  .testi .nm{ font-size:12.5px; font-weight:800; margin-top:7px; display:flex; align-items:center; gap:6px; }
+  .testi .verif{ color:var(--green2); font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+  .testi .verif svg{ width:13px; height:13px; flex-shrink:0; }
+  .stars{ color:var(--accent); letter-spacing:2px; font-size:15px; }
+
+  /* Carrossel de depoimentos (etapa 27) */
+  .carousel{ position:relative; min-height:170px; }
+  .cslide{ position:absolute; inset:0; opacity:0; transform:translateX(46px); transition:opacity .5s ease, transform .5s cubic-bezier(.3,.8,.35,1); pointer-events:none; }
+  .cslide.active{ opacity:1; transform:translateX(0); pointer-events:auto; }
+  .cslide.out{ opacity:0; transform:translateX(-46px); }
+  .cdots{ display:flex; gap:7px; justify-content:center; margin:14px 0 6px; }
+  .cdots i{ width:7px; height:7px; border-radius:50%; background:#ddd5c5; transition:.3s; }
+  .cdots i.on{ background:var(--accent2); width:20px; border-radius:4px; }
+
+  /* Rating step */
+  .rate{ text-align:center; } .rate .big{ font-size:46px; font-weight:900; }
+
+  /* Scan mock (etapa 11) */
+  .vf{ position:relative; margin:0 0 16px; border-radius:26px; background:radial-gradient(120% 100% at 50% 20%, #fff 0%, #fbf6ea 70%, #f1e8d4 100%); aspect-ratio:1/1; overflow:hidden; box-shadow:inset 0 0 0 1px var(--line); cursor:pointer; }
+  .vf .reticle,.vf .c2{ position:absolute; inset:22px; }
+  .vf .reticle::before,.vf .reticle::after,.vf .c2::before,.vf .c2::after{ content:""; position:absolute; width:32px; height:32px; border:3px solid var(--accent); }
+  .vf .reticle::before{ top:0; left:0; border-right:none; border-bottom:none; border-radius:14px 0 0 0; }
+  .vf .reticle::after{ bottom:0; right:0; border-left:none; border-top:none; border-radius:0 0 14px 0; }
+  .vf .c2::before{ top:0; right:0; border-left:none; border-bottom:none; border-radius:0 14px 0 0; }
+  .vf .c2::after{ bottom:0; left:0; border-right:none; border-top:none; border-radius:0 0 0 14px; }
+  .vf .plate{ position:absolute; top:50%; left:50%; width:64%; transform:translate(-50%,-50%); animation:spin 22s linear infinite; filter:drop-shadow(0 14px 22px rgba(120,80,10,.18)); }
+  @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg) } }
+  .vf .badge{ position:absolute; background:#fff; border-radius:30px; padding:6px 11px 6px 7px; box-shadow:0 8px 18px rgba(0,0,0,.12); display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:800; }
+  .vf .badge .d{ width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .vf .badge .d svg{ width:12px; height:12px; } .vf .badge small{ display:block; font-size:9.5px; color:var(--muted); font-weight:600; }
+  .b-kcal{ top:9%; right:7% } .b-carb{ top:32%; left:5% } .b-prot{ top:46%; right:4% } .b-fib{ bottom:22%; left:7% } .b-fat{ bottom:9%; right:12% }
+  .scan-hand{ position:absolute; left:50%; bottom:2%; width:46%; z-index:6; pointer-events:none; transform:translateX(-50%); transform-origin:50% 30%; filter:drop-shadow(0 8px 14px rgba(0,0,0,.25)); }
+  .scan-hand.tap{ transform:translateX(-50%) translateY(5px) scale(.97); }
+  .tap-ring{ position:absolute; top:50%; left:50%; width:60px; height:60px; margin:-30px 0 0 -30px; border-radius:50%; border:2px solid rgba(200,147,10,.5); z-index:4; pointer-events:none; animation:tapRing 1s ease-out infinite; }
+  @keyframes tapRing{ 0%{ transform:scale(.55); opacity:.8 } 100%{ transform:scale(1.5); opacity:0 } }
+  .scan-hand.hide{ opacity:0; transform:translateX(-50%) translateY(24px); transition:.45s; pointer-events:none; }
+  .scan-hint{ text-align:center; color:var(--muted); font-size:13.5px; margin:2px 0 6px; }
+  .result{ background:#fff; border-radius:22px; box-shadow:0 10px 28px rgba(0,0,0,.06); padding:18px; margin-top:8px; animation:objIn .4s ease both; }
+  .result.hidden{ display:none; }
+  .result .rt{ display:flex; align-items:center; gap:8px; font-weight:900; font-size:16px; margin-bottom:3px; }
+  .result .rt svg{ width:20px; height:20px; color:var(--accent2); flex-shrink:0; }
+  .result .ai{ font-size:11.5px; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:5px; }
+  .result .ai svg{ width:14px; height:14px; flex-shrink:0; }
+  .food{ display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px solid var(--line); }
+  .food:first-of-type{ border-top:none; }
+  .food .fi{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; }
+  .food .fi svg{ width:17px; height:17px; }
+  .food .fn{ flex:1; font-weight:700; font-size:14px; }
+  .food .fk{ color:var(--muted); font-size:12.5px; font-weight:600; }
+  .tot{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; text-align:center; }
+  .tot div{ background:#f6efdf; border-radius:14px; padding:9px 4px; }
+  .tot b{ font-size:15px; font-weight:900; color:var(--accent2); } .tot small{ display:block; font-size:10px; color:var(--muted); }
+
+  /* Loading overlay */
+  .loading{ position:fixed; inset:0; z-index:90; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; text-align:center; opacity:0; pointer-events:none; transition:opacity .4s; }
+  .loading.show{ opacity:1; pointer-events:auto; }
+  .lring{ width:130px; height:130px; border-radius:50%; position:relative; --p:0; background:conic-gradient(var(--accent) calc(var(--p)*1%), #eee7d8 0); transition:--p .4s linear; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+  .lring::before{ content:""; position:absolute; inset:14px; background:var(--bg); border-radius:50%; }
+  .loading.show .lring{ animation:lpulse 1.3s ease-in-out infinite; }
+  @keyframes lpulse{ 0%,100%{ transform:scale(1); filter:drop-shadow(0 0 0 rgba(202,164,58,0)); } 50%{ transform:scale(1.05); filter:drop-shadow(0 0 16px rgba(202,164,58,.5)); } }
+  .lring b{ position:relative; font-size:30px; font-weight:900; }
+  .lsteps{ text-align:left; max-width:300px; width:100%; }
+  .lstep{ display:flex; align-items:center; gap:11px; padding:8px 0; font-size:14px; font-weight:600; color:#b7afa1; transition:.3s; }
+  .lstep .lc{ width:24px; height:24px; border-radius:50%; border:2px solid #ddd5c5; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.3s; }
+  .lstep .lc svg{ width:14px; height:14px; opacity:0; color:#fff; }
+  .lstep.done{ color:var(--ink); } .lstep.done .lc{ background:var(--green2); border-color:var(--green2); } .lstep.done .lc svg{ opacity:1; }
+
+  /* Checkout */
+  .price{ text-align:center; margin:8px 0 18px; }
+  .price .v{ font-size:50px; font-weight:900; letter-spacing:-1px; color:#1f9d4d; display:inline-block; animation:pricePulse 1.8s ease-in-out infinite; } .price .v small{ font-size:22px; color:#1f9d4d; }
+  .price .old{ color:#e0484b; text-decoration:line-through; font-size:16px; margin-left:8px; }
+  @keyframes pricePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+  @media (prefers-reduced-motion: reduce){ .price .v, .ptag .pp{ animation:none !important; } }
+  .incl{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; font-size:14px; }
+  .incl svg{ width:20px; height:20px; color:var(--green2); flex-shrink:0; }
+  .guarantee{ display:flex; gap:10px; align-items:center; background:#eef6e6; border-radius:14px; padding:13px; font-size:12.5px; color:#4a6b3e; margin-top:14px; }
+  .guarantee svg{ width:22px; height:22px; color:var(--green2); flex-shrink:0; }
+
+  /* Checkout: Jetzt vs Ziel */
+  .cmp{ padding:0; overflow:hidden; }
+  .cmp-head{ display:grid; grid-template-columns:1fr 1fr; text-align:center; padding:13px 0; border-bottom:1px solid var(--line); font-weight:900; font-size:15px; }
+  .cmp-head .now{ color:#e0484b; } .cmp-head .goal{ color:var(--green2); }
+  .cmp-imgs{ position:relative; display:grid; grid-template-columns:1fr 1fr; background:#f4f1ea; }
+  .cmp-img{ width:100%; height:200px; object-fit:contain; object-position:center bottom; display:block; }
+  .cmp-img.gray{ filter:grayscale(1) contrast(1.03); }
+  .cmp-arrow{ position:absolute; top:46%; left:50%; transform:translate(-50%,-50%); width:42px; height:42px; border-radius:50%; background:#fff; box-shadow:0 6px 16px rgba(0,0,0,.16); display:flex; align-items:center; justify-content:center; color:var(--accent2); z-index:2; animation:cmpArrow 1.4s ease-in-out infinite; }
+  .cmp-arrow svg{ width:22px; height:22px; }
+  @keyframes cmpArrow{ 0%,100%{ transform:translate(-62%,-50%); } 50%{ transform:translate(-38%,-50%); } }
+  .cmp-data{ display:grid; grid-template-columns:1fr 1fr; }
+  .cmp-side{ padding:15px 16px; } .cmp-side+.cmp-side{ border-left:1px solid var(--line); }
+  .cd{ margin-bottom:13px; } .cd:last-child{ margin:0; }
+  .cd .cl{ font-size:11px; color:var(--muted); } .cd b{ display:block; font-size:19px; font-weight:900; margin-top:1px; }
+  .cd .lvl.low{ color:#e0484b; } .cd .lvl.high{ color:var(--green2); }
+  .cd .lbars{ display:flex; gap:4px; margin-top:6px; } .cd .lbars i{ flex:1; height:5px; border-radius:3px; background:#efe3e3; }
+  .cd .lbars i:first-child{ background:#e0484b; }
+  .cd .lbars.g i{ background:var(--green2); }
+
+  /* Preisauswahl */
+  .plansel{ margin-bottom:16px; }
+  .planbadge{ background:var(--accent2); color:#fff; font-size:11px; font-weight:900; letter-spacing:.5px; text-align:center; padding:7px; border-radius:14px 14px 0 0; }
+  .planopt{ display:flex; align-items:center; gap:12px; border:2px solid var(--accent); border-top:none; border-radius:0 0 16px 16px; background:#fdf8ea; padding:16px; cursor:pointer; }
+  .planopt .pradio{ width:22px; height:22px; border-radius:50%; border:2px solid var(--accent); position:relative; flex-shrink:0; }
+  .planopt.sel .pradio::after{ content:""; position:absolute; inset:4px; border-radius:50%; background:var(--accent); }
+  .pinfo{ flex:1; } .pname{ font-weight:900; font-size:16px; } .pprices{ font-size:13.5px; margin-top:2px; } .pprices s{ color:var(--muted); } .pprices b{ color:var(--ink); font-weight:900; }
+  .ptag{ text-align:right; } .ptag .pp{ font-size:26px; font-weight:900; line-height:1; color:#1f9d4d; display:inline-block; animation:pricePulse 1.8s ease-in-out infinite; } .ptag .pp small{ font-size:15px; } .ptag .pday{ font-size:11px; color:var(--muted); } .ptag .pday s{ color:#e0484b; }
+
+  .co-buy{ margin-bottom:16px; }
+  .paycards{ text-align:center; margin-bottom:14px; }
+  .paycards .secure{ font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.6px; margin-bottom:8px; }
+  .paycards img{ max-width:250px; width:82%; height:auto; }
+  .garantia{ text-align:center; margin-bottom:8px; }
+  .garantia img{ width:130px; height:auto; }
+
+  @media(max-width:480px){
+    .incl{ font-size:12px; line-height:1.35; padding:6px 0; gap:8px; }
+    .incl svg{ width:17px; height:17px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+  <symbol id="i-checkc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.4 12.2l2.6 2.6 4.6-5.2"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5 6 4-13 2.5 7H21"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s5 4.2 5 9.2a5 5 0 0 1-10 0c0-2 1-3.6 2-4.6.5 1.3 1.4 1.9 2.1 2.1C11 7 11.5 4.6 12 2.5z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5L4 14h6l-1 7.5L20 10h-6l1-7.5z"/></symbol>
+  <symbol id="i-grain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2s5.6 5.6 5.6 9.8a5.6 5.6 0 0 1-11.2 0c0-4.2 5.6-9.8 5.6-9.8z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 6-13 15-13 0 9-5 14-13 14"/><path d="M5 19c3-5 7-7.5 11-8.5"/></symbol>
+  <symbol id="i-carrot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21s2-9 8.5-9.5S21 5 21 5s-3.5 1-6 1"/><path d="M14 4c1.5 1.5 2 4 2 4M11 7c1.5 1 2.5 3 2.5 3"/></symbol>
+  <symbol id="i-body" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.3"/><path d="M12 7.1v6.4M12 9.4L8 11.6M12 9.4l4 2.2M12 13.5l-3.4 5.7M12 13.5l3.4 5.7"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2 5.6 5.6 2-5.6 2-2 5.6-2-5.6-5.6-2 5.6-2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-syringe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8.2v7.6M8.2 12h7.6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10 5 7 4.6 4 5.1V18c3-.5 6-.1 8 1.3 2-1.4 5-1.8 8-1.3V5.1c-3-.5-6-.1-8 1.3z"/><path d="M12 6.4V19.3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-batt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="15" height="9" rx="2"/><path d="M21 11v3"/><path d="M6.5 12.5h4"/></symbol>
+  <symbol id="i-pct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7.5" r="2.3"/><circle cx="16.5" cy="16.5" r="2.3"/><path d="M6 18L18 6"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9A2.3 2.3 0 0 1 5.8 6.7h1.6l.95-1.75a1.3 1.3 0 0 1 1.15-.7h3.1a1.3 1.3 0 0 1 1.15.7L14.6 6.7h1.6A2.3 2.3 0 0 1 18.5 9v7.8A2.3 2.3 0 0 1 16.2 19H5.8a2.3 2.3 0 0 1-2.3-2.2z"/><circle cx="11" cy="12.8" r="3.1"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16l3-4 3 2 4-6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20S4 14.5 4 9a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5.5-8 11-8 11z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M17 14.2A5.5 5.5 0 0 1 20.5 20"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="row">
+      <button class="back" id="back" disabled><svg><use href="#i-back"/></svg></button>
+      <div class="brand"><img src="img/logo.png" alt="HealthMe"></div>
+      <div class="spacer"></div>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- ETAPA 1 — SEXO -->
+    <section class="step" data-step="1">
+      <h1>Verfolge deinen Fortschritt mit GLP-1</h1>
+      <p class="lead">Beantworte die nächsten Fragen und erhalte einen personalisierten Plan, um deine Ergebnisse auf deiner GLP-1-Reise zu optimieren.</p>
+      <h2 class="q">Was ist dein Geschlecht?</h2>
+      <div class="cards2">
+        <button class="pcard" data-val="Mann" type="button"><span class="check"><svg><use href="#i-check"/></svg></span><img src="img/etapa1/iconman.jpg" alt=""><span class="lbl">Mann</span></button>
+        <button class="pcard" data-val="Frau" type="button"><span class="check"><svg><use href="#i-check"/></svg></span><img src="img/etapa1/iconwoman.jpg" alt=""><span class="lbl">Frau</span></button>
+      </div>
+    </section>
+
+    <!-- ETAPA 2 — IDADE -->
+    <section class="step" data-step="2">
+      <h2 class="q">Wie alt bist du?</h2>
+      <p class="lead" style="margin-top:-8px">Wir personalisieren deinen Plan anhand deiner Altersgruppe.</p>
+      <div class="cards-age" id="age-cards"></div>
+    </section>
+
+    <!-- ETAPA 3 — VÍDEO -->
+    <section class="step" data-step="3">
+      <div class="palm">Alles in deiner Handfläche</div>
+      <div class="media"><div class="video-slot"></div></div>
+      <p class="lead center">Deine komplette App, um Ernährung, Flüssigkeitszufuhr, Aktivitäten und vieles mehr zu verfolgen — alles an einem Ort.</p>
+    </section>
+
+    <!-- ETAPA 4 — GIF acompanhamento -->
+    <section class="step" data-step="4">
+      <h1 class="center">Unkompliziertes Tracking</h1>
+      <img class="gif" src="img/etapa4/gif.gif" alt="">
+      <p class="lead center">Erfasse Dosen und Nebenwirkungen und sieh dir deinen Verlauf schnell und übersichtlich an.</p>
+    </section>
+
+    <!-- ETAPA 5 — Transformação -->
+    <section class="step" data-step="5">
+      <h1 class="center">Erlebe deine Transformation</h1>
+      <div class="transform" id="transform">
+        <span class="t-label before">Vorher</span>
+        <img class="t-img t1" src="img/modelos/mulheres/modelofemea3.png" alt="">
+        <img class="t-img t2" src="img/modelos/mulheres/modelofemea.png" alt="">
+        <img class="t-img t3" src="img/modelos/mulheres/modelofemea2.png" alt="">
+        <div class="t-spin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16"/><path d="M4 20v-4h4"/></svg></div>
+      </div>
+      <p class="lead center">Verfolge deine Ergebnisse, vergleiche Fortschrittsfotos und feiere jeden erreichten Erfolg.</p>
+    </section>
+
+    <!-- ETAPA 6 — Jornada -->
+    <section class="step" data-step="6">
+      <h2 class="q">Wo stehst du auf deiner GLP-1-Reise?</h2>
+      <div class="opts">
+        <div class="opt" data-val="using"><span class="rdo"></span> Ich nehme bereits GLP-1</div>
+        <div class="opt" data-val="starting"><span class="rdo"></span> Ich möchte mit GLP-1 beginnen</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 7 — Medicamento -->
+    <section class="step" data-step="7">
+      <h2 class="q" id="q-med">Welches GLP-1-Medikament nimmst du?</h2>
+      <div class="opts" id="med-opts">
+        <div class="opt" data-val="Ozempic"><span class="rdo"></span> Ozempic</div>
+        <div class="opt" data-val="Wegovy"><span class="rdo"></span> Wegovy</div>
+        <div class="opt" data-val="Saxenda"><span class="rdo"></span> Saxenda</div>
+        <div class="opt" data-val="Mounjaro"><span class="rdo"></span> Mounjaro</div>
+        <div class="opt" data-val="Zepbound"><span class="rdo"></span> Zepbound</div>
+        <div class="opt" data-val="Ich bin mir beim Namen nicht sicher"><span class="rdo"></span> Ich bin mir beim Namen nicht sicher</div>
+        <div class="opt" data-val="Andere" data-other="1"><span class="rdo"></span> Anderes GLP-1-Medikament<input class="other" placeholder="Welches? Hier eingeben"></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 8 — Dose -->
+    <section class="step" data-step="8">
+      <h2 class="q" id="q-dose">Wie hoch ist deine aktuelle Dosis?</h2>
+      <div class="opts" id="dose-opts"></div>
+    </section>
+
+    <!-- ETAPA 9 — Frequência -->
+    <section class="step" data-step="9">
+      <h2 class="q">Wie oft spritzt du?</h2>
+      <div class="opts" id="freq-opts">
+        <div class="opt" data-val="Täglich"><span class="rdo"></span> Täglich</div>
+        <div class="opt" data-val="Wöchentlich"><span class="rdo"></span> Wöchentlich</div>
+        <div class="opt" data-val="Alle zwei Wochen"><span class="rdo"></span> Alle zwei Wochen</div>
+        <div class="opt" data-val="Monatlich"><span class="rdo"></span> Monatlich</div>
+        <div class="opt" data-val="Andere" data-other="1"><span class="rdo"></span> Andere<input class="other" placeholder="Welche? Hier eingeben"></div>
+        <div class="opt" data-val="Weiß ich noch nicht"><span class="rdo"></span> Weiß ich noch nicht</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 10 — Dificuldade -->
+    <section class="step" data-step="10">
+      <h2 class="q">Was ist heute deine größte Herausforderung?</h2>
+      <div class="opts" id="diff-opts">
+        <div class="opt" data-val="Ernährung und Diät"><span class="oi"><svg><use href="#i-leaf"/></svg></span> Ernährung und Diät</div>
+        <div class="opt" data-val="Körperliche Aktivität"><span class="oi"><svg><use href="#i-bolt"/></svg></span> Körperliche Aktivität</div>
+        <div class="opt" data-val="Dosen erfassen und spritzen"><span class="oi"><svg><use href="#i-syringe"/></svg></span> Dosen erfassen und spritzen</div>
+        <div class="opt" data-val="Meinen Fortschritt sehen"><span class="oi"><svg><use href="#i-chart"/></svg></span> Meinen Fortschritt sehen</div>
+        <div class="opt" data-val="Nebenwirkungen und Symptome"><span class="oi"><svg><use href="#i-heart"/></svg></span> Nebenwirkungen und Symptome</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 11 — Alimentação inteligente -->
+    <section class="step" data-step="11">
+      <h1 class="center">Intelligente Ernährung</h1>
+      <p class="lead center">Scanne, sprich oder tippe deine Mahlzeiten ein und erhalte Diätvorschläge, Makronährstoffe und Kalorien, die genau auf dein Ziel abgestimmt sind.</p>
+      <div class="vf" id="scan-vf">
+        <div class="reticle"></div><div class="c2"></div>
+        <img class="plate" src="img/prato.png" alt="">
+        <div class="badge b-kcal"><span class="d" style="background:#ff6b3d"><svg><use href="#i-flame"/></svg></span><div><b>612</b> kcal</div></div>
+        <div class="badge b-carb"><span class="d" style="background:#5ac8fa"><svg><use href="#i-grain"/></svg></span><div><b>64 g</b><small>Kohlenhydrate</small></div></div>
+        <div class="badge b-prot"><span class="d" style="background:#ff9500"><svg><use href="#i-bolt"/></svg></span><div><b>32 g</b><small>Protein</small></div></div>
+        <div class="badge b-fib"><span class="d" style="background:#34c759"><svg><use href="#i-leaf"/></svg></span><div><b>9 g</b><small>Ballaststoffe</small></div></div>
+        <div class="badge b-fat"><span class="d" style="background:#a06bd6"><svg><use href="#i-drop"/></svg></span><div><b>22 g</b><small>Fett</small></div></div>
+        <span class="tap-ring"></span>
+        <img id="scan-hand" class="scan-hand" src="img/handleok.png" alt="">
+      </div>
+      <p class="scan-hint" id="scan-hint">Tippe auf den Teller, um zu analysieren</p>
+      <div class="result hidden" id="scan-result">
+        <div class="rt"><svg><use href="#i-checkc"/></svg> Mahlzeit erkannt</div>
+        <div class="ai"><svg fill="#a37c1f"><use href="#i-spark"/></svg> Analysiert von der HealthMe-KI</div>
+        <div class="food"><span class="fi" style="background:#ffcaa8"><svg><use href="#i-bolt"/></svg></span><span class="fn">Hähnchenbrust</span><span class="fk">165 kcal · 31 g Protein</span></div>
+        <div class="food"><span class="fi" style="background:#8fd6a0"><svg><use href="#i-grain"/></svg></span><span class="fn">Erbsen</span><span class="fk">81 kcal · 5 g Protein</span></div>
+        <div class="food"><span class="fi" style="background:#6fc27a"><svg><use href="#i-leaf"/></svg></span><span class="fn">Brokkoli</span><span class="fk">34 kcal · 7 g Ballaststoffe</span></div>
+        <div class="food"><span class="fi" style="background:#e8c071"><svg><use href="#i-grain"/></svg></span><span class="fn">Kartoffeln</span><span class="fk">163 kcal · 37 g KH</span></div>
+        <div class="food"><span class="fi" style="background:#f0a35a"><svg><use href="#i-carrot"/></svg></span><span class="fn">Karotte</span><span class="fk">41 kcal · 10 g KH</span></div>
+        <div class="tot"><div><b>612</b><small>kcal</small></div><div><b>32 g</b><small>Protein</small></div><div><b>64 g</b><small>KH</small></div><div><b>22 g</b><small>Fett</small></div></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 12 — Altura -->
+    <section class="step" data-step="12">
+      <h2 class="q center">Wie groß bist du?</h2>
+      <div class="seg-wrap"><div class="segment" id="seg-h"><button data-u="in">Zoll</button><button data-u="cm" class="on">cm</button></div></div>
+      <div class="bignum"><input id="height" type="number" inputmode="numeric" value="165"><span class="u" id="height-u">cm</span></div>
+      <input type="range" id="height-range" class="slider" min="140" max="210" value="165">
+      <div class="note neutral"><span class="ni"><svg><use href="#i-pulse"/></svg></span><div><p class="nt">Wir berechnen deinen BMI</p><p class="nd">Der BMI nutzt deine Größe und dein Gewicht, um zu beurteilen, ob du in einem gesunden Bereich liegst.</p></div></div>
+    </section>
+
+    <!-- ETAPA 13 — Peso atual -->
+    <section class="step" data-step="13">
+      <h2 class="q center">Wie viel wiegst du aktuell?</h2>
+      <div class="seg-wrap"><div class="segment" id="seg-w"><button data-u="lb">lb</button><button data-u="kg" class="on">kg</button></div></div>
+      <div class="bignum"><input id="weight" type="number" inputmode="numeric" value="90"><span class="u" id="weight-u">kg</span></div>
+      <input type="range" id="weight-range" class="slider" min="45" max="200" value="90">
+      <div class="note warn" id="fb-note"><span class="ni"><svg><use href="#i-alert" id="fb-ic"/></svg></span><div><p class="nt" id="fb-bmi">Dein BMI beträgt 33,1 — gilt als Adipositas</p><p class="nd" id="fb-desc">Mit etwas weniger Gewicht gewinnst du viel für deine Gesundheit. Wir nutzen deinen BMI, um dein Programm zu erstellen.</p></div></div>
+    </section>
+
+    <!-- ETAPA 14 — Peso meta -->
+    <section class="step" data-step="14">
+      <h2 class="q center">Welches Gewicht möchtest du erreichen?</h2>
+      <div class="seg-wrap"><div class="segment" id="seg-t"><button data-u="lb">lb</button><button data-u="kg" class="on">kg</button></div></div>
+      <div class="bignum"><input id="target" type="number" inputmode="numeric" value="70"><span class="u" id="target-u">kg</span></div>
+      <input type="range" id="target-range" class="slider" min="45" max="200" value="70">
+      <div class="note good"><span class="ni"><svg><use href="#i-checkc"/></svg></span><div><p class="nt" id="fb-benefit">Gesundheitsvorteil: 22% weniger Körpergewicht</p><p class="nd">Studien zeigen, dass schon 10% Gewichtsverlust das Risiko für Bluthochdruck, Herzprobleme und hohen Blutzucker deutlich senkt.</p></div></div>
+    </section>
+
+    <!-- ETAPA 15 — Mascote meta -->
+    <section class="step" data-step="15">
+      <div class="mascot">
+        <img src="img/mascote/flufyfeliz.png" alt="">
+        <h1><b id="m-loss">15,0&nbsp;kg</b> abzunehmen ist ein ausgezeichnetes und klinisch erreichbares Ziel.</h1>
+        <div class="mini-note"><svg><use href="#i-checkc"/></svg><span>Unsere Nutzer nehmen <b>konstant</b> ab und halten ihr Gewicht — viel häufiger — wenn sie die Behandlung mit dem personalisierten HealthMe-Plan kombinieren.</span></div>
+        <div class="pen-scene" aria-hidden="true">
+          <img class="fita" src="img/animacoes/caneta/fita.png" alt="">
+          <span class="pen c1" style="--rot:7deg"><img src="img/animacoes/caneta/caneta1.png" alt=""></span>
+          <span class="pen c2" style="--rot:-11deg"><img src="img/animacoes/caneta/caneta2.png" alt=""></span>
+          <span class="pen c3" style="--rot:20deg"><img src="img/animacoes/caneta/caneta3.png" alt=""></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ETAPA 16 — 3x -->
+    <section class="step" data-step="16">
+      <h2 class="q center">Lass deine Behandlung 3× schneller wirken</h2>
+      <div class="card">
+        <div class="compare">
+          <div class="col"><div class="lab">OHNE</div><div class="box gray"><div class="p"><span class="cnum" data-to="33">0</span>%</div><div class="s">Wirksamkeit</div></div></div>
+          <div class="col"><div class="lab g"><svg style="width:13px;height:13px;vertical-align:-1px" fill="#a37c1f"><use href="#i-spark"/></svg> Mit HealthMe</div><div class="box dark"><div class="big"><span class="cnum" data-to="3">0</span>×</div><div class="s">mehr Ergebnisse</div></div></div>
+        </div>
+        <p class="lead center" style="margin:18px 6px 0">Ein komplettes Tracking, das die Ergebnisse deiner Behandlung verstärkt.</p>
+      </div>
+    </section>
+
+    <!-- ETAPA 17 — Resumo pessoal -->
+    <section class="step" data-step="17">
+      <h2 class="q center">Deine persönliche Zusammenfassung</h2>
+      <div class="card">
+        <div class="ctitle"><div class="ic"><svg><use href="#i-body"/></svg></div><h3>Body-Mass-Index</h3></div>
+        <div class="scale"><span class="lbl" id="s17-lbl" style="left:60%">Du: 33,1</span><span class="mk" id="s17-mk" style="left:60%"></span></div>
+        <div class="scale-cat"><span>Untergewicht</span><span>Normal</span><span>Übergewicht</span><span>Adipositas</span></div>
+        <div class="note warn" style="margin-top:18px"><span class="ni"><svg><use href="#i-alert"/></svg></span><div><p class="nt" id="s17-fb">Dein BMI beträgt 33,1 — gilt als Adipositas</p><p class="nd">Mit etwas weniger Gewicht gewinnst du viel. Wir nutzen deinen BMI, um dein Programm zu erstellen.</p></div></div>
+        <div class="sum-grid">
+          <div class="sum-list">
+            <div class="r"><div class="k">Körperfett</div><div class="v"><svg><use href="#i-pct"/></svg> <span id="s17-bf">38,2</span>%</div></div>
+            <div class="r"><div class="k">Energielevel</div><div class="v"><svg><use href="#i-batt"/></svg> Von der Ernährung abhängig</div></div>
+            <div class="r"><div class="k">Ziel</div><div class="v"><svg><use href="#i-flame"/></svg> Abnehmen</div></div>
+          </div>
+          <img class="sum-img" id="s17-img" src="../modelo.png" alt="">
+        </div>
+      </div>
+    </section>
+
+    <!-- ETAPA 18 — Previsão de peso -->
+    <section class="step" data-step="18">
+      <h2 class="q">Wir sagen voraus, dass du bis <span class="gold" id="p18-d">Sept. 2026</span> <span class="gold" id="p18-w">78 kg</span> wiegen wirst</h2>
+      <div class="card">
+        <div class="chartbox"><canvas id="chart18"></canvas></div>
+        <div class="note good" style="margin-top:14px"><span class="ni"><svg><use href="#i-checkc"/></svg></span><div><p class="nt">Gute Nachrichten!</p><p class="nd">Basierend auf Menschen mit deinem Profil sagen wir voraus, dass du dein Ziel mit dem HealthMe-GLP-1-Plan erreichst.</p></div></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 19 — Potencial de sucesso -->
+    <section class="step" data-step="19">
+      <h2 class="q center">Dein Erfolgspotenzial mit HealthMe</h2>
+      <div class="card">
+        <div class="chartbox"><canvas id="chart19"></canvas></div>
+        <div class="chartlbl"><span><i style="background:#a37c1f"></i> Mit HealthMe</span><span><i style="background:#cdc3ad"></i> Ohne Begleitung</span></div>
+        <p class="lead center" style="margin:14px 6px 0">Daten aus klinischen Studien zeigen, dass Nutzer mit strukturierter Begleitung bessere Ergebnisse erzielen.</p>
+      </div>
+    </section>
+
+    <!-- ETAPA 20 — Vídeo prova social -->
+    <section class="step" data-step="20">
+      <h2 class="q center">Sieh, was auf ihrer Reise passiert ist</h2>
+      <div class="media"><div class="video-slot"></div></div>
+      <p class="lead center">„Ich war verloren, wusste nicht, was ich essen sollte oder wie ich keine Muskelmasse verliere … aber HealthMe GLP-1 hat mir mit meinen Ergebnissen und meinem Wohlbefinden geholfen."</p>
+    </section>
+
+    <!-- ETAPA 21 — Motivação -->
+    <section class="step" data-step="21">
+      <h2 class="q">Was motiviert dich, dieses Ziel zu erreichen?</h2>
+      <p class="lead" style="margin-top:-8px">Du kannst mehrere auswählen.</p>
+      <div class="chips" id="motiv">
+        <div class="chip" data-val="Mich wieder wohlfühlen"><span class="ck"><svg><use href="#i-check"/></svg></span> Mich wieder wohlfühlen</div>
+        <div class="chip" data-val="Einfach ein Neuanfang"><span class="ck"><svg><use href="#i-check"/></svg></span> Einfach ein Neuanfang</div>
+        <div class="chip" data-val="Mehr Energie und Schwung"><span class="ck"><svg><use href="#i-check"/></svg></span> Mehr Energie und Schwung</div>
+        <div class="chip" data-val="Bessere Werte (Cholesterin / Blutzucker)"><span class="ck"><svg><use href="#i-check"/></svg></span> Bessere Werte (Cholesterin / Blutzucker)</div>
+        <div class="chip" data-val="Ein Vorbild für meine Liebsten sein"><span class="ck"><svg><use href="#i-check"/></svg></span> Ein Vorbild für meine Liebsten sein</div>
+        <div class="chip" data-val="Ein besonderes Ereignis steht bevor"><span class="ck"><svg><use href="#i-check"/></svg></span> Ein besonderes Ereignis steht bevor</div>
+        <div class="chip" data-val="Wieder Kleidung tragen, die ich mag"><span class="ck"><svg><use href="#i-check"/></svg></span> Wieder Kleidung tragen, die ich mag</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 22 — Atividade física -->
+    <section class="step" data-step="22">
+      <h2 class="q">Wie hoch ist dein körperliches Aktivitätsniveau?</h2>
+      <div class="opts" id="act-opts">
+        <div class="opt" data-val="sed"><span class="rdo"></span> Sitzend (wenig oder kein Sport)</div>
+        <div class="opt" data-val="light"><span class="rdo"></span> Leicht aktiv (1–3 Tage/Woche)</div>
+        <div class="opt" data-val="mod"><span class="rdo"></span> Mäßig aktiv (3–4 Tage/Woche)</div>
+        <div class="opt" data-val="active"><span class="rdo"></span> Aktiv (5–6 Tage/Woche)</div>
+        <div class="opt" data-val="very"><span class="rdo"></span> Sehr aktiv (täglich intensiver Sport)</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 23 — Resultados duradouros -->
+    <section class="step" data-step="23">
+      <h2 class="q center">Dauerhafte Ergebnisse mit HealthMe</h2>
+      <div class="card">
+        <p class="lead center" style="margin-top:0">Unser Ansatz hilft dir, das verlorene Gewicht zu halten und den Jojo-Effekt zu vermeiden.</p>
+        <div class="chartbox"><canvas id="chart23"></canvas></div>
+        <div class="chartlbl"><span><i style="background:#1f9d4d"></i> Mit HealthMe</span><span><i style="background:#ff9500"></i> Andere Methoden</span></div>
+        <div class="note good" style="margin-top:14px"><span class="ni"><svg><use href="#i-checkc"/></svg></span><div><p class="nt">90% der Nutzer</p><p class="nd">halten ihren Gewichtsverlust länger als 6 Monate.</p></div></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 24 — Vídeo prova social homem -->
+    <section class="step" data-step="24">
+      <h2 class="q center">Echte Geschichten von HealthMe-Nutzern</h2>
+      <div class="media"><div class="video-slot"></div></div>
+      <p class="lead center">Erfahrungen von Menschen, die ihren GLP-1-Behandlungsalltag mit der HealthMe-Begleitung verändert haben.</p>
+    </section>
+
+    <!-- ETAPA 25 — Companheiro virtual -->
+    <section class="step" data-step="25">
+      <div class="mascot">
+        <img src="img/mascote/mascote.png" alt="">
+        <h1>Lerne deinen virtuellen Begleiter kennen. Das ist <b>Flufy</b> 🐬</h1>
+        <p class="lead center" style="margin-top:6px">Verlass dich auf ihn, der dich bei jedem Schritt deiner Reise motiviert und unterstützt.</p>
+      </div>
+    </section>
+
+    <!-- ETAPA 26 — Transforme seus resultados -->
+    <section class="step" data-step="26">
+      <h2 class="q center">Verwandle deine Ergebnisse</h2>
+      <p class="lead center" style="margin-top:-8px">Sieh, was sich ändert, wenn du dich mit HealthMe begleiten lässt.</p>
+      <div class="card">
+        <div class="bars" id="bars26">
+          <div class="lg"><span><i style="background:#e9e3d6"></i>Ohne</span><span><i style="background:#16130c"></i>Mit HealthMe</span></div>
+          <div class="b" data-sem="35" data-com="88"><div class="bl">Erfolg beim Abnehmen</div><div class="track"><div class="bar sem"><b>35%</b></div></div><div class="track" style="margin-top:5px"><div class="bar com"><b>88%</b></div></div></div>
+          <div class="b" data-sem="22" data-com="84"><div class="bl">Kontrolle der Nebenwirkungen</div><div class="track"><div class="bar sem"><b>22%</b></div></div><div class="track" style="margin-top:5px"><div class="bar com"><b>84%</b></div></div></div>
+          <div class="b" data-sem="31" data-com="92"><div class="bl">Klarheit bei der täglichen Ernährung</div><div class="track"><div class="bar sem"><b>31%</b></div></div><div class="track" style="margin-top:5px"><div class="bar com"><b>92%</b></div></div></div>
+          <div class="b" data-sem="18" data-com="96"><div class="bl">Sicherheit bei der Dosierung</div><div class="track"><div class="bar sem"><b>18%</b></div></div><div class="track" style="margin-top:5px"><div class="bar com"><b>96%</b></div></div></div>
+          <div class="b" data-sem="25" data-com="89"><div class="bl">Kontrolle der Flüssigkeitszufuhr</div><div class="track"><div class="bar sem"><b>25%</b></div></div><div class="track" style="margin-top:5px"><div class="bar com"><b>89%</b></div></div></div>
+        </div>
+        <div class="note neutral" style="margin-top:6px"><span class="ni"><svg><use href="#i-spark"/></svg></span><div><p class="nd" style="font-weight:700;color:#3f3b34">Nutzer, die konstant tracken, sehen bis zu 3× bessere Ergebnisse auf ihrer GLP-1-Reise.</p></div></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 27 — Avaliação + feedbacks -->
+    <section class="step" data-step="27">
+      <div class="mascot" style="padding-top:0"><img src="img/mascote/flufycelular.png" alt="" style="width:120px;margin-bottom:10px"></div>
+      <div class="rate center">
+        <div class="muted" style="font-size:12px;font-weight:800;letter-spacing:1px">HILF UNS ZU WACHSEN</div>
+        <div style="font-weight:800;margin-top:4px">Gib eine Bewertung ab</div>
+        <div class="big">4,9</div>
+        <div class="stars">★★★★★</div>
+        <div class="muted" style="font-size:12px;margin-top:4px">durchschnittliche Bewertung</div>
+      </div>
+      <div class="carousel" id="rate-carousel" style="margin-top:18px">
+        <div class="cslide active"><div class="testi" style="margin:0">
+          <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'">
+          <div><div class="q">„Früher habe ich alles auf Papier notiert und verloren. Jetzt komme ich mit allem auf dem Handy zum Arzt. Er hat die Organisation der Behandlung sehr gelobt."</div><div class="nm">Sonja B. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div>
+        </div></div>
+        <div class="cslide"><div class="testi" style="margin:0">
+          <img src="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'">
+          <div><div class="q">„In 2 Monaten habe ich bereits 9 kg abgenommen. Die App erinnert mich an alles: Dosis, Wasser und Mahlzeiten. Sie hat meinen Alltag komplett verändert."</div><div class="nm">Carla M. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div>
+        </div></div>
+        <div class="cslide"><div class="testi" style="margin:0">
+          <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'">
+          <div><div class="q">„Die Übelkeit ließ nach, als ich anfing, den Ernährungsvorschlägen zu folgen. Ich fühle mich bei der Behandlung viel sicherer."</div><div class="nm">Patricia R. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div>
+        </div></div>
+        <div class="cslide"><div class="testi" style="margin:0">
+          <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'">
+          <div><div class="q">„Meinen Fortschritt in Diagrammen zu sehen, motiviert mich jeden Tag. Endlich schaffe ich es, den Fokus und die Ergebnisse zu halten."</div><div class="nm">Juliana F. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div>
+        </div></div>
+      </div>
+      <div class="cdots" id="rate-dots"></div>
+      <div class="note good" style="margin-top:8px"><span class="ni"><svg><use href="#i-checkc"/></svg></span><div><p class="nt">Du bist bereit, dein Leben zu verändern!</p><p class="nd">Schließe dich Tausenden von Nutzern an, die bereits abnehmen.</p></div></div>
+    </section>
+
+    <!-- ETAPA 28 — Compromisso -->
+    <section class="step" data-step="28">
+      <h2 class="q">Bist du bereit, den personalisierten Plan zu befolgen, den wir für dich erstellen?</h2>
+      <div class="card" style="padding:16px">
+        <label class="bmi-lab" style="display:block;margin-bottom:8px">UM DEINEN PLAN ZU PERSONALISIEREN</label>
+        <input id="user-name" type="text" placeholder="Wie dürfen wir dich nennen?" style="width:100%;border:1.5px solid var(--line);border-radius:14px;padding:14px;font-size:16px;outline:none;font-family:inherit">
+      </div>
+      <div class="opts">
+        <div class="opt" id="commit-yes" style="justify-content:center;font-weight:800;color:var(--accent2)"><span class="oi"><svg><use href="#i-checkc"/></svg></span> JA, ich bin dabei!</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 29 — PLANO -->
+    <section class="step" data-step="29">
+      <h1 class="resHead" id="plan-head" style="font-size:24px">Dein Plan ist fertig!</h1>
+      <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+        <span class="tag" style="background:#fff;border:1px solid var(--line);font-weight:700;display:inline-flex;align-items:center;gap:6px"><svg style="width:14px;height:14px;color:var(--accent2)"><use href="#i-shield"/></svg> Auf deinem Profil basierend</span>
+        <span class="tag" style="background:#fff;border:1px solid var(--line);font-weight:700;display:inline-flex;align-items:center;gap:6px"><svg style="width:14px;height:14px;color:var(--accent2)" fill="#a37c1f"><use href="#i-spark"/></svg> Wissenschaftlich belegt</span>
+      </div>
+      <div class="card">
+        <div class="ctitle"><div class="ic"><svg><use href="#i-cal"/></svg></div><h3>Zeitleiste deines Fortschritts</h3></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#8a8170;letter-spacing:.4px"><span>AKTUELLES GEWICHT</span><span>ZIEL</span></div>
+        <div class="tl-track"><span class="a"></span><span class="b"></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font-size:22px;font-weight:900" id="pl-cw">90,0 kg</div><div style="text-align:right"><div style="font-size:22px;font-weight:900" id="pl-gw">70,0 kg</div><div style="font-size:11px;color:var(--muted)" id="pl-date">—</div></div></div>
+      </div>
+      <div class="grid2">
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#fde2e1;color:#e0484b"><svg><use href="#i-flame"/></svg></div><div><div class="mt">Kalorien</div><div class="ms">Tagesziel</div></div></div><div class="ring" data-p="86" style="--c:var(--red)"><b data-num="2100">0</b></div><div style="text-align:center;font-size:11px;color:var(--muted);margin-top:2px">kcal</div></div>
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#ffe9cc;color:#cc7a00"><svg><use href="#i-bolt"/></svg></div><div><div class="mt">Protein</div><div class="ms">Muskelmasse erhalten</div></div></div><div class="ring" data-p="70" style="--c:var(--orange)"><b data-num="150" data-suffix="g">0</b></div></div>
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#e3f6e6;color:#1f9d4d"><svg><use href="#i-grain"/></svg></div><div><div class="mt">Kohlenhydrate</div><div class="ms">Energie und Sättigung</div></div></div><div class="ring" data-p="64" style="--c:var(--green)"><b data-num="200" data-suffix="g">0</b></div></div>
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#fff3cc;color:#b8920f"><svg><use href="#i-drop"/></svg></div><div><div class="mt">Fett</div><div class="ms">Hormongesundheit</div></div></div><div class="ring" data-p="58" style="--c:var(--yellow)"><b data-num="62" data-suffix="g">0</b></div></div>
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#d9f0fb;color:#2b9fd6"><svg><use href="#i-drop"/></svg></div><div><div class="mt">Wasser</div><div class="ms">Tägliche Flüssigkeitszufuhr</div></div></div><div class="glass"><span class="fill" data-h="64%"></span><b id="pl-water">2,8L</b></div></div>
+        <div class="mcard"><div class="mhead"><div class="mi" style="background:#e3f6e6;color:#1f9d4d"><svg><use href="#i-leaf"/></svg></div><div><div class="mt">Ballaststoffe</div><div class="ms">Sättigung und Verdauung</div></div></div><div style="font-size:28px;font-weight:900" id="pl-fiber">38g</div><div class="pbar"><i data-w="72%"></i></div></div>
+      </div>
+      <div class="mcard" style="margin-bottom:14px"><div class="mhead"><div class="mi" style="background:#f4f0e6;color:var(--accent2)"><svg><use href="#i-syringe"/></svg></div><div><div class="mt" id="pl-medname">Nächste Anwendung</div><div class="ms" id="pl-freq">GLP-1</div></div></div><div style="font-size:14px;color:#3f3b34" id="pl-medline">Individuelle Dosis</div></div>
+      <div class="card" id="pl-ai-note" style="display:none"><div class="ctitle"><div class="ic"><svg fill="#a37c1f"><use href="#i-spark"/></svg></div><h3>KI-Empfehlung</h3></div><p class="lead" id="pl-ai-text" style="margin:0"></p></div>
+      <div class="card">
+        <div class="ctitle"><div class="ic"><svg><use href="#i-body"/></svg></div><h3>Body-Mass-Index</h3></div>
+        <div class="bmi-row">
+          <div><div class="bmi-lab">AKTUELLER BMI</div><div class="bmi-val" id="pl-bmi">33,1</div><span class="tag warn" id="pl-cat">ADIPOSITAS</span></div>
+          <div style="align-self:center;color:#cdc3ad"><svg style="width:22px;height:22px"><use href="#i-chev"/></svg></div>
+          <div style="text-align:right"><div class="bmi-lab">ZIEL-BMI</div><div class="bmi-val" id="pl-bmi2">25,7</div><span class="tag ok">NORMALGEWICHT</span></div>
+        </div>
+        <div class="scale"><span class="mk" id="pl-mk" style="left:60%"></span></div>
+        <div class="scale-cat"><span>15</span><span>45+</span></div>
+      </div>
+      <div class="card">
+        <div class="ctitle"><div class="ic"><svg><use href="#i-book"/></svg></div><h3>In der App verwendete medizinische Quellen</h3></div>
+        <div class="src"><span class="doc"><svg><use href="#i-doc"/></svg></span><div><div class="a">Wirksamkeit und Risiken von GLP-1</div><div class="bb">Nature Medicine</div></div><span class="chev"><svg style="width:17px;height:17px"><use href="#i-chev"/></svg></span></div>
+        <div class="src"><span class="doc"><svg><use href="#i-doc"/></svg></span><div><div class="a">Die Zukunft der Adipositas-Behandlung</div><div class="bb">Harvard Magazine</div></div><span class="chev"><svg style="width:17px;height:17px"><use href="#i-chev"/></svg></span></div>
+        <div class="src"><span class="doc"><svg><use href="#i-doc"/></svg></span><div><div class="a">Messung von Körperfett und BMI</div><div class="bb">Harvard T.H. Chan</div></div><span class="chev"><svg style="width:17px;height:17px"><use href="#i-chev"/></svg></span></div>
+        <div class="src"><span class="doc"><svg><use href="#i-doc"/></svg></span><div><div class="a">Forschung zu GLP-1-Medikamenten</div><div class="bb">UChicago Medicine</div></div><span class="chev"><svg style="width:17px;height:17px"><use href="#i-chev"/></svg></span></div>
+      </div>
+    </section>
+
+    <!-- ETAPA 30 — Depoimentos -->
+    <section class="step" data-step="30">
+      <h2 class="q center">Sieh, was andere sagen</h2>
+      <p class="lead center" style="margin-top:-8px">Wir haben bereits Tausenden Menschen geholfen, ihre Ziele zu erreichen. Wir können auch dir helfen.</p>
+      <div class="testi"><img src="https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'"><div><div class="q">„Ich wusste nicht, wie viele Kalorien ich essen sollte, wie viel Protein … HealthMe hat mir genau gezeigt, was zu tun ist. Jetzt habe ich einen klaren Plan. Mein Wohlbefinden ist zurück. Sehr zu empfehlen!"</div><div class="nm">Jennifer L. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div></div>
+      <div class="testi"><img src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'"><div><div class="q">„Ich habe 15 kg abgenommen, meine Energie ist explodiert und ich fühle mich dank HealthMe endlich großartig!"</div><div class="nm">Emma T. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div></div>
+      <div class="testi"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'"><div><div class="q">„Ich hatte große Angst vor den Nebenwirkungen. Mit dem Plan von HealthMe, der speziell für mich erstellt wurde, konnte ich sie alle vermeiden. Vielen Dank, HealthMe!"</div><div class="nm">Caroline O. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div></div>
+      <div class="testi"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&h=120&fit=crop&crop=faces" alt="" onerror="this.style.background='#e8ce78'"><div><div class="q">„Ich nahm meine Dosen an den falschen Tagen, vergaß sie ständig und sah keine Ergebnisse. Mit HealthMe befolge ich meine Behandlung jetzt zu 100% korrekt. Richtige Ernährung, Dosis am richtigen Tag — und echte Ergebnisse."</div><div class="nm">Mona J. <span class="verif"><svg><use href="#i-checkc"/></svg> Verifiziert</span></div></div></div>
+    </section>
+
+    <!-- ETAPA 31 — Pronto -->
+    <section class="step" data-step="31">
+      <div class="card center" style="padding:18px"><div style="font-size:21px;font-weight:900">Über 10.000</div><div class="muted" style="font-size:12px">5-Sterne-Bewertungen</div><div class="stars" style="margin-top:6px">★★★★★</div></div>
+      <div class="mascot" style="padding-top:0"><img src="img/mascote/fluflycaneta.png" alt="" style="margin:0 auto 14px"></div>
+      <h1 class="center" style="font-size:24px"><span id="r31-name">Du</span>, bist du bereit, deine Reise zu beginnen?</h1>
+      <p class="lead center" style="margin-top:4px">Der erste Schritt zu deiner besten Version beginnt jetzt.</p>
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:10px;font-size:14px">Dein vollständiger Plan umfasst all das und noch viel mehr:</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Tracking von Injektionen, Gewicht, Mahlzeiten, Wasser, Aktivitäten, Nebenwirkungen und Körpermaßen</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> KI-Assistent, rund um die Uhr verfügbar, für alle Fragen zu deiner Behandlung</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Fortschritt deiner Behandlung und Transformation mit Diagrammen, Fotos und Berichten</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Täglich empfohlene Planung von Kalorien, Proteinen, Kohlenhydraten und Fetten</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Mach ein Foto von deinem Teller und erfahre genau, wie viele Kalorien du isst</div>
+      </div>
+    </section>
+
+    <!-- ETAPA 32 — Checkout -->
+    <section class="step" data-step="32">
+      <h2 class="q center">Dein personalisierter Plan ist fertig!</h2>
+      <p class="lead center" style="margin-top:-8px">Hör auf, deine Behandlung zu verschwenden. Verfolge ab heute alles an einem Ort.</p>
+      <div class="card">
+        <div class="price"><span class="v">9,90<small> €</small></span><span class="old">29,90 €</span></div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Tracking von Injektionen, Gewicht, Mahlzeiten, Wasser, Aktivitäten, Nebenwirkungen und Körpermaßen</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> KI-Assistent, rund um die Uhr verfügbar, für alle Fragen zu deiner Behandlung</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Fortschritt deiner Behandlung und Transformation mit Diagrammen, Fotos und Berichten</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Täglich empfohlene Planung von Kalorien, Proteinen, Kohlenhydraten und Fetten</div>
+        <div class="incl"><svg><use href="#i-checkc"/></svg> Mach ein Foto von deinem Teller und erfahre genau, wie viele Kalorien du isst</div>
+      </div>
+
+      <button class="cta green co-buy">ICH WILL MEINEN PLAN</button>
+
+      <!-- Jetzt vs Ziel -->
+      <div class="card cmp">
+        <div class="cmp-head"><span class="now">Jetzt</span><span class="goal">Ziel</span></div>
+        <div class="cmp-imgs">
+          <img id="cmp-now-img" class="cmp-img gray" src="" alt="">
+          <span class="cmp-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
+          <img id="cmp-goal-img" class="cmp-img" src="" alt="">
+        </div>
+        <div class="cmp-data">
+          <div class="cmp-side">
+            <div class="cd"><span class="cl">Körperfett</span><b id="cmp-now-bf">41%</b></div>
+            <div class="cd"><span class="cl">BMI</span><b id="cmp-now-bmi">33,9</b></div>
+            <div class="cd"><span class="cl">Fitnesslevel</span><b class="lvl low">Niedrig</b><span class="lbars"><i></i><i></i><i></i></span></div>
+          </div>
+          <div class="cmp-side">
+            <div class="cd"><span class="cl">Körperfett</span><b id="cmp-goal-bf">33%</b></div>
+            <div class="cd"><span class="cl">BMI</span><b id="cmp-goal-bmi">26,9</b></div>
+            <div class="cd"><span class="cl">Fitnesslevel</span><b class="lvl high">Hoch</b><span class="lbars g"><i></i><i></i><i></i></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preisauswahl -->
+      <div class="plansel">
+        <div class="planbadge">🔥 EINMALZAHLUNG – KEIN ABO</div>
+        <label class="planopt sel">
+          <span class="pradio"></span>
+          <div class="pinfo"><div class="pname">Kompletter Plan</div><div class="pprices">Einmalig · kein Abo</div></div>
+          <div class="ptag"><div class="pp">9,90<small>€</small></div><div class="pday"><s>29,90 €</s></div></div>
+        </label>
+      </div>
+
+      <button class="cta green co-buy" id="co-btn">ICH WILL MEINEN PLAN</button>
+
+      <div class="paycards"><div class="secure">GESICHERTER CHECKOUT</div><img src="img/cards.avif" alt="Visa, Mastercard, PayPal, AMEX"></div>
+      <div class="garantia"><img src="img/garantiaselo.png" alt="7 Tage Garantie"></div>
+    </section>
+
+  </div><!-- /stage -->
+
+  <div class="footer">
+    <button class="cta" id="cta">Weiter</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div class="lring" id="lring"><b id="lpct">0%</b></div>
+  <h1 style="font-size:21px;margin:0 0 18px">Wir erstellen deinen personalisierten Plan…</h1>
+  <div class="lsteps">
+    <div class="lstep" data-i="0"><span class="lc"><svg><use href="#i-check"/></svg></span> Dein Profil und deine Antworten werden analysiert</div>
+    <div class="lstep" data-i="1"><span class="lc"><svg><use href="#i-check"/></svg></span> Ziele und Vorgaben werden berechnet</div>
+    <div class="lstep" data-i="2"><span class="lc"><svg><use href="#i-check"/></svg></span> Medizinische Quellen werden geprüft</div>
+    <div class="lstep" data-i="3"><span class="lc"><svg><use href="#i-check"/></svg></span> Dein Plan wird fertiggestellt</div>
+  </div>
+</div>
+
+<script>
+/* =================== ESTADO =================== */
+var TOTAL = 32;
+var state = {
+  sex:'Frau', age:32, usage:'using', med:'Ozempic', medOther:'', dose:'0,5 mg',
+  freq:'Wöchentlich', freqOther:'', difficulty:'', heightCm:165, weightKg:90, targetKg:70,
+  hUnit:'cm', wUnit:'kg', tUnit:'kg', targetTouched:false, activity:'light', name:'', motiv:[]
+};
+var step = 1;
+var els = {};
+document.querySelectorAll('.step').forEach(function(s){ els[+s.dataset.step]=s; });
+var bar = document.getElementById('bar'), back = document.getElementById('back'), cta = document.getElementById('cta'), stage=document.getElementById('stage');
+
+/* botão/CTA por etapa: label custom; null = sem CTA global (auto-avança) */
+var CTA = {1:null,2:null,6:null,7:null,8:null,9:null,10:null,22:null,28:null,
+  29:'Meine Reise beginnen',31:'Ja, ich bin bereit!',32:null};
+
+var MESES = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+function nf(n){ return (Math.round(n*10)/10).toFixed(1).replace('.',','); }
+function curBmi(){ var h=state.heightCm/100; return state.weightKg/(h*h); }
+function bmiCat(b){ if(b<18.5)return['UNTERGEWICHT','warn']; if(b<25)return['NORMALGEWICHT','ok']; if(b<30)return['ÜBERGEWICHT','warn']; return['ADIPOSITAS','warn']; }
+function catName(b){ if(b<18.5)return'Untergewicht'; if(b<25)return'Normalgewicht'; if(b<30)return'Übergewicht'; return'Adipositas'; }
+function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+
+/* =================== NAVEGAÇÃO =================== */
+function setProgress(n){ bar.style.width = Math.max(3, Math.min(100, (n/TOTAL)*100)) + '%'; }
+
+function show(n){
+  Object.keys(els).forEach(function(k){ els[k].classList.remove('active'); });
+  els[n].classList.add('active');
+  step = n; stage.scrollTop = 0;
+  setProgress(n);
+  try{ if(window.HMTrack){ HMTrack.step(n, (window.STEP_NAMES&&STEP_NAMES[n])||('Etapa '+n)); if(n===32) HMTrack.event('quiz_complete',{}); } }catch(e){}
+  back.disabled = (n===1);
+  var label = (n in CTA) ? CTA[n] : 'Weiter';
+  if(label===null){ cta.style.display='none'; }
+  else { cta.style.display='block'; cta.textContent=label; cta.classList.toggle('dark', n===29); cta.classList.toggle('green', n===32); }
+  onShow(n);
+}
+function next(){
+  if(step===28){ startLoading(); return; }
+  if(step>=TOTAL){ doCheckout(); return; }
+  show(step+1);
+}
+function prev(){ if(step>1) show(step-1); }
+cta.addEventListener('click', next);
+back.addEventListener('click', prev);
+
+/* =================== ETAPA 1: SEXO =================== */
+els[1].querySelectorAll('.pcard').forEach(function(c){
+  c.addEventListener('click', function(){
+    els[1].querySelectorAll('.pcard').forEach(function(x){x.classList.remove('sel');});
+    c.classList.add('sel'); state.sex=c.dataset.val; ans('sexo', state.sex);
+    setTimeout(next, 240);
+  });
+});
+
+/* =================== ETAPA 2: IDADE =================== */
+var AGE = [
+  {r:'18-29',v:24}, {r:'30-34',v:32}, {r:'35-39',v:37}, {r:'40+',v:45}
+];
+function renderAge(){
+  var box=document.getElementById('age-cards'); box.innerHTML='';
+  var who = state.sex==='Mann' ? 'homem' : 'mulher';
+  AGE.forEach(function(a,i){
+    var d=document.createElement('button'); d.type='button'; d.className='acard'; d.dataset.v=a.v;
+    var src='img/idade/'+who+encodeURIComponent(a.r)+'.png';
+    d.innerHTML='<img src="'+src+'" onerror="this.style.opacity=0">'+
+      '<span class="tag">'+a.r+' <svg><use href="#i-chev"/></svg></span>';
+    d.addEventListener('click', function(){ state.age=a.v; ans('idade', a.r); setTimeout(next,200); });
+    box.appendChild(d);
+  });
+}
+
+/* =================== OPTION LISTS (radio) =================== */
+function bindRadio(container, onPick){
+  container.querySelectorAll('.opt').forEach(function(o){
+    o.addEventListener('click', function(){
+      container.querySelectorAll('.opt').forEach(function(x){ x.classList.remove('sel'); var i=x.querySelector('.other'); if(i)i.classList.remove('show'); });
+      o.classList.add('sel');
+      var inp=o.querySelector('.other'); if(inp){ inp.classList.add('show'); setTimeout(function(){inp.focus();},50); }
+      onPick(o.dataset.val, o);
+    });
+  });
+}
+/* seleção avança sozinho; se a opção abre input (Andere/Individuell), mostra "Weiter" */
+function pickOrContinue(setter){
+  return function(v,o){
+    setter(v);
+    if(o.getAttribute('data-other')){
+      cta.classList.remove('dark','green'); cta.textContent='Weiter'; cta.style.display='block';
+    } else {
+      setTimeout(next, 200);
+    }
+  };
+}
+bindRadio(els[6], function(v){ state.usage=v; ans('jornada', v); setTimeout(next,220); });
+bindRadio(document.getElementById('med-opts'), pickOrContinue(function(v){ state.med=v; ans('medicamento', v); }));
+bindRadio(document.getElementById('freq-opts'), pickOrContinue(function(v){ state.freq=v; ans('frequencia', v); }));
+bindRadio(document.getElementById('act-opts'), function(v){ state.activity=v; ans('atividade', v); setTimeout(next,200); });
+bindRadio(document.getElementById('diff-opts'), function(v){ state.difficulty=v; ans('dificuldade', v); setTimeout(next,200); });
+
+/* dose list */
+var DOSES=['0,25 mg','0,5 mg','1,0 mg','1,5 mg','2,0 mg','2,4 mg','2,5 mg','3,0 mg','4,0 mg','5,0 mg','7,5 mg','10,0 mg','12,5 mg','15,0 mg'];
+(function(){
+  var box=document.getElementById('dose-opts'); var html='';
+  DOSES.forEach(function(d){ html+='<div class="opt" data-val="'+d+'"><span class="rdo"></span> '+d+'</div>'; });
+  html+='<div class="opt full" data-val="Individuell" data-other="1"><span class="rdo"></span> Individuell<input class="other" placeholder="Gib deine Dosis ein"></div>';
+  html+='<div class="opt full" data-val="Nicht sicher"><span class="rdo"></span> Ich bin mir nicht sicher</div>';
+  box.innerHTML=html;
+  bindRadio(box, pickOrContinue(function(v){ state.dose=v; ans('dose', v); }));
+})();
+
+/* med "outro" texto */
+document.querySelectorAll('#med-opts .other')[0].addEventListener('input',function(e){ state.medOther=e.target.value; });
+document.querySelectorAll('#freq-opts .other')[0].addEventListener('input',function(e){ state.freqOther=e.target.value; });
+
+/* =================== ETAPA 21: MOTIVAÇÃO (multi) =================== */
+els[21].querySelectorAll('.chip').forEach(function(c){
+  c.addEventListener('click', function(){
+    c.classList.toggle('sel');
+    var v=c.dataset.val, i=state.motiv.indexOf(v);
+    if(c.classList.contains('sel')){ if(i<0) state.motiv.push(v); } else if(i>=0) state.motiv.splice(i,1);
+    ans('motivacao', state.motiv.join(' | '));
+  });
+});
+
+/* =================== MEDIDAS (altura/peso/meta) =================== */
+function bindMeasure(o){
+  var input=document.getElementById(o.input), range=document.getElementById(o.range), uEl=document.getElementById(o.uEl), seg='#'+o.seg;
+  function get(){ return state[o.key]; } function unit(){ return state[o.unitKey]; }
+  function render(updInput){
+    range.value=Math.round(get()); uEl.textContent=unit();
+    if(updInput){ input.value = unit()===o.metric ? Math.round(get()) : Math.round(get()*o.toImp); }
+  }
+  range.addEventListener('input',function(){ state[o.key]=+range.value; if(o.key==='targetKg')state.targetTouched=true; render(true); o.after&&o.after(); });
+  input.addEventListener('input',function(){ var v=parseFloat(input.value)||0; state[o.key]= unit()===o.metric ? v : v/o.toImp; if(o.key==='targetKg')state.targetTouched=true; range.value=Math.round(get()); o.after&&o.after(); });
+  document.querySelectorAll(seg+' button').forEach(function(b){
+    b.addEventListener('click',function(){ document.querySelectorAll(seg+' button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); state[o.unitKey]=b.dataset.u; render(true); });
+  });
+  return render;
+}
+var rH=bindMeasure({input:'height',range:'height-range',uEl:'height-u',seg:'seg-h',key:'heightCm',unitKey:'hUnit',metric:'cm',toImp:1/2.54});
+var rW=bindMeasure({input:'weight',range:'weight-range',uEl:'weight-u',seg:'seg-w',key:'weightKg',unitKey:'wUnit',metric:'kg',toImp:2.20462,after:fbWeight});
+var rT=bindMeasure({input:'target',range:'target-range',uEl:'target-u',seg:'seg-t',key:'targetKg',unitKey:'tUnit',metric:'kg',toImp:2.20462,after:fbBenefit});
+function fbWeight(){
+  var b=curBmi(), healthy=(b>=18.5&&b<25);
+  var note=document.getElementById('fb-note'), ic=document.getElementById('fb-ic');
+  document.getElementById('fb-bmi').textContent = healthy
+    ? 'Dein BMI beträgt '+nf(b)+' — top, du bist im gesunden Bereich!'
+    : 'Dein BMI beträgt '+nf(b)+' — gilt als '+catName(b);
+  document.getElementById('fb-desc').textContent = healthy
+    ? 'Stark! Wir nutzen deinen BMI, um dein Programm optimal auf dich abzustimmen.'
+    : 'Mit etwas weniger Gewicht gewinnst du viel für deine Gesundheit. Wir nutzen deinen BMI, um dein Programm zu erstellen.';
+  if(note) note.className='note '+(healthy?'good':'warn');
+  if(ic) ic.setAttribute('href', healthy?'#i-checkc':'#i-alert');
+}
+function fbBenefit(){ var p=Math.max(0,Math.round((state.weightKg-state.targetKg)/state.weightKg*100)); document.getElementById('fb-benefit').textContent='Gesundheitsvorteil: '+p+'% weniger Körpergewicht'; }
+
+/* =================== HOOKS onShow =================== */
+var charts={};
+function onShow(n){
+  pauseVideosExcept(n);
+  if(n===2) renderAge();
+  if(n===7){ document.getElementById('q-med').textContent = state.usage==='starting' ? 'Welches GLP-1-Medikament möchtest du nehmen?' : 'Welches GLP-1-Medikament nimmst du?'; }
+  if(n===8){ document.getElementById('q-dose').textContent = state.usage==='starting' ? 'Mit welcher Dosis wirst du beginnen?' : 'Wie hoch ist deine aktuelle Dosis?'; }
+  if(n===11) startScanHand();
+  if(n===13){ rW(true); fbWeight(); }
+  if(n===14){ if(!state.targetTouched){ state.targetKg=Math.round(23*Math.pow(state.heightCm/100,2)); rT(true); } fbBenefit(); }
+  if(n===15){ document.getElementById('m-loss').innerHTML=nf(Math.max(0,state.weightKg-state.targetKg))+'&nbsp;kg';
+    var sc=els[15].querySelector('.pen-scene'); if(sc){ sc.classList.remove('run'); void sc.offsetWidth; sc.classList.add('run'); } }
+  if(n===17) renderSummary();
+  if(n===18) chart18();
+  if(n===19) chart19();
+  if(n===23) chart23();
+  if(n===26) bars26();
+  if(n===25){ }
+  if(n===31){ document.getElementById('r31-name').textContent = state.name || 'Du'; }
+  if(n===32) renderCheckout();
+  if(n!==11) stopScanHand();
+  if(n===5) startTransform(); else stopTransform();
+  if(n===16) animateCompare();
+  if(n===27) startCarousel(); else stopCarousel();
+  if([3,20,24].indexOf(n)>=0) mountVideo(n);
+}
+
+/* =================== ETAPA 11 scan hand =================== */
+var handTimer=null, handOn=false;
+function startScanHand(){
+  var vf=document.getElementById('scan-vf'), hand=document.getElementById('scan-hand');
+  if(!vf) return;
+  if(!vf._bound){
+    vf._bound=true;
+    vf.addEventListener('click', function(){
+      if(vf._scanned) return; vf._scanned=true;
+      stopScanHand();
+      if(hand) hand.classList.add('hide');
+      var ring=els[11].querySelector('.tap-ring'); if(ring) ring.style.display='none';
+      var hint=document.getElementById('scan-hint'), res=document.getElementById('scan-result');
+      hint.textContent='Analysiere …';
+      setTimeout(function(){
+        hint.style.display='none';
+        res.classList.remove('hidden');
+        try{ res.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
+      }, 1500);
+    });
+  }
+  if(vf._scanned || handTimer) return;
+  handTimer=setInterval(function(){ handOn=!handOn; hand.src=handOn?'img/handleclick1.png':'img/handleok.png'; hand.classList.toggle('tap',handOn); },1000);
+}
+function stopScanHand(){ if(handTimer){ clearInterval(handTimer); handTimer=null; } }
+
+/* =================== ETAPA 5 transformação =================== */
+var tfTimer=null, tfCur=0;
+function tfLabel(el,idx){ if(!el)return;
+  var m = idx===0?['Vorher','before'] : idx===1?['Prozess','process'] : ['Nachher','after'];
+  el.textContent=m[0]; el.className='t-label '+m[1];
+}
+function startTransform(){
+  if(tfTimer) return;
+  var box=els[5], imgs=Array.prototype.slice.call(box.querySelectorAll('.t-img'));
+  var spin=box.querySelector('.t-spin'), label=box.querySelector('.t-label');
+  var male=state.sex==='Mann';
+  var base=male?'img/modelos/homens/modelomacho':'img/modelos/mulheres/modelofemea';
+  imgs[0].src=base+'3.png'; imgs[1].src=base+'.png'; imgs[2].src=base+'2.png';
+  tfCur=0;
+  imgs.forEach(function(im){ im.classList.remove('show','back'); }); spin.classList.remove('show');
+  imgs[0].classList.add('show'); tfLabel(label,0);
+  function cycle(){
+    tfTimer=setTimeout(function(){
+      imgs[tfCur].classList.remove('show'); imgs[tfCur].classList.add('back');
+      spin.classList.add('show');
+      tfTimer=setTimeout(function(){
+        spin.classList.remove('show');
+        imgs[tfCur].classList.remove('back');
+        tfCur=(tfCur+1)%imgs.length;
+        imgs[tfCur].classList.remove('back');
+        imgs[tfCur].classList.add('show'); tfLabel(label,tfCur);
+        cycle();
+      },1000);
+    },1600);
+  }
+  cycle();
+}
+function stopTransform(){
+  if(tfTimer){ clearTimeout(tfTimer); tfTimer=null; }
+  var box=els[5]; if(!box) return;
+  box.querySelectorAll('.t-img').forEach(function(i){ i.classList.remove('show','back'); });
+  var sp=box.querySelector('.t-spin'); if(sp) sp.classList.remove('show');
+}
+
+/* =================== ETAPA 16 comparação =================== */
+function animateCompare(){
+  var c=els[16].querySelector('.compare'); if(!c) return;
+  c.classList.remove('run'); void c.offsetWidth; c.classList.add('run');
+  els[16].querySelectorAll('.cnum').forEach(function(el){
+    var to=parseFloat(el.getAttribute('data-to'))||0, t0=null;
+    function fr(ts){ if(t0===null)t0=ts; var p=Math.min(1,(ts-t0)/1100), e=1-Math.pow(1-p,3); el.textContent=Math.round(to*e); if(p<1)requestAnimationFrame(fr); else el.textContent=to; }
+    requestAnimationFrame(fr);
+  });
+}
+
+/* =================== ETAPA 27 carrossel =================== */
+var carTimer=null, carIdx=0;
+function startCarousel(){
+  var dots=document.getElementById('rate-dots'), slides=els[27].querySelectorAll('.cslide');
+  if(!dots.children.length){ for(var i=0;i<slides.length;i++){ var s=document.createElement('i'); if(i===0)s.className='on'; dots.appendChild(s); } }
+  if(carTimer) return; carIdx=0;
+  carTimer=setInterval(function(){
+    var prev=carIdx; carIdx=(carIdx+1)%slides.length;
+    slides[prev].classList.remove('active'); slides[prev].classList.add('out');
+    slides[carIdx].classList.remove('out'); slides[carIdx].classList.add('active');
+    for(var i=0;i<dots.children.length;i++) dots.children[i].className = i===carIdx?'on':'';
+    setTimeout(function(){ slides[prev].classList.remove('out'); },560);
+  },3200);
+}
+function stopCarousel(){
+  if(carTimer){ clearInterval(carTimer); carTimer=null; }
+  if(!els[27]) return;
+  var slides=els[27].querySelectorAll('.cslide');
+  slides.forEach(function(s,i){ s.classList.toggle('active',i===0); s.classList.remove('out'); });
+  carIdx=0; var dots=document.getElementById('rate-dots');
+  if(dots) for(var i=0;i<dots.children.length;i++) dots.children[i].className = i===0?'on':'';
+}
+
+/* =================== ETAPA 17 resumo =================== */
+function bodyFat(){ var male=state.sex==='Mann'?1:0; return Math.max(8, 1.2*curBmi()+0.23*state.age-10.8*male-5.4); }
+function renderSummary(){
+  var b=curBmi(), pos=Math.max(4,Math.min(96,(b-15)/30*100));
+  document.getElementById('s17-mk').style.left=pos+'%';
+  var l=document.getElementById('s17-lbl'); l.style.left=pos+'%'; l.textContent='Du: '+nf(b);
+  document.getElementById('s17-fb').textContent='Dein BMI beträgt '+nf(b)+' — gilt als '+catName(b);
+  document.getElementById('s17-bf').textContent=nf(bodyFat());
+  var dir17 = state.sex==='Mann' ? 'homens/modelomacho' : 'mulheres/modelofemea';
+  document.getElementById('s17-img').src = 'img/modelos/'+dir17+(b>=30?'3':'')+'.png';
+}
+
+/* =================== ETAPA 32 checkout (Jetzt vs Ziel) =================== */
+function renderCheckout(){
+  var male=state.sex==='Mann';
+  var b=curBmi(), tb=state.targetKg/Math.pow(state.heightCm/100,2);
+  var dir=male?'homens/modelomacho':'mulheres/modelofemea';
+  document.getElementById('cmp-now-img').src='img/modelos/'+dir+(b>=30?'3':'')+'.png';
+  document.getElementById('cmp-goal-img').src='img/modelos/'+dir+'2.png';
+  var nowBf=Math.max(8,1.2*b+0.23*state.age-10.8*(male?1:0)-5.4);
+  var goalBf=Math.max(8,1.2*tb+0.23*state.age-10.8*(male?1:0)-5.4);
+  document.getElementById('cmp-now-bf').textContent=nf(nowBf)+'%';
+  document.getElementById('cmp-goal-bf').textContent=nf(goalBf)+'%';
+  document.getElementById('cmp-now-bmi').textContent=nf(b);
+  document.getElementById('cmp-goal-bmi').textContent=nf(tb);
+}
+
+/* =================== GRÁFICOS =================== */
+function gradient(ctx,c1,c2){ var g=ctx.createLinearGradient(0,0,0,220); g.addColorStop(0,c1); g.addColorStop(1,c2); return g; }
+var baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:{grid:{display:false},ticks:{color:'#b7afa1',font:{size:11,weight:'700'}}},y:{grid:{color:'#f0ece3'},ticks:{color:'#b7afa1',font:{size:11}}}}};
+function chart18(){
+  if(charts[18])return; var c=document.getElementById('chart18'); var ctx=c.getContext('2d');
+  var weeks=Math.max(6,Math.round((state.weightKg-state.targetKg)/1)); var pts=6, labels=[], data=[];
+  var d0=new Date();
+  for(var i=0;i<=pts;i++){ var dd=addDays(d0, Math.round(weeks*7*i/pts)); labels.push(dd.getDate()+' '+MESES[dd.getMonth()]); var t=i/pts, e=1-Math.pow(1-t,1.7); data.push(Math.round((state.weightKg-(state.weightKg-state.targetKg)*e)*10)/10); }
+  document.getElementById('p18-w').textContent=nf(state.targetKg)+' kg';
+  var dn=addDays(d0,weeks*7); document.getElementById('p18-d').textContent=MESES[dn.getMonth()]+' '+dn.getFullYear();
+  charts[18]=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[{data:data,borderColor:'#a37c1f',borderWidth:3,fill:true,backgroundColor:gradient(ctx,'rgba(202,164,58,.28)','rgba(202,164,58,0)'),tension:.4,pointRadius:function(c){return c.dataIndex===pts?6:0;},pointBackgroundColor:'#1f9d4d',pointBorderColor:'#fff',pointBorderWidth:2}]},options:baseOpts});
+}
+function chart19(){
+  if(charts[19])return; var ctx=document.getElementById('chart19').getContext('2d');
+  var L=['Wo. 0','Wo. 4','Wo. 8','Wo. 12','Wo. 16','Wo. 20'];
+  charts[19]=new Chart(ctx,{type:'line',data:{labels:L,datasets:[
+    {data:[10,32,52,68,80,90],borderColor:'#a37c1f',borderWidth:3,tension:.45,fill:true,backgroundColor:gradient(ctx,'rgba(202,164,58,.22)','rgba(202,164,58,0)'),pointRadius:0},
+    {data:[10,18,24,28,30,31],borderColor:'#cdc3ad',borderWidth:2.5,borderDash:[5,5],tension:.45,fill:false,pointRadius:0}
+  ]},options:baseOpts});
+}
+function chart23(){
+  if(charts[23])return; var ctx=document.getElementById('chart23').getContext('2d');
+  var L=['Monat 1','Monat 2','Monat 3','Monat 4','Monat 5','Monat 6'];
+  charts[23]=new Chart(ctx,{type:'line',data:{labels:L,datasets:[
+    {data:[20,48,66,78,85,88],borderColor:'#1f9d4d',borderWidth:3,tension:.45,fill:true,backgroundColor:gradient(ctx,'rgba(52,199,89,.2)','rgba(52,199,89,0)'),pointRadius:0},
+    {data:[20,52,60,46,34,24],borderColor:'#ff9500',borderWidth:2.5,borderDash:[5,5],tension:.45,fill:false,pointRadius:0}
+  ]},options:baseOpts});
+}
+function bars26(){
+  setTimeout(function(){
+    els[26].querySelectorAll('#bars26 .b').forEach(function(b){
+      b.querySelector('.bar.sem').style.width=b.dataset.sem+'%';
+      b.querySelector('.bar.com').style.width=b.dataset.com+'%';
+    });
+  },120);
+}
+
+/* =================== VÍDEO VTURB (um player por etapa) =================== */
+var VTURB_ACCOUNT='1a08de6e-5582-4e59-9343-8ad1f2dfcbb5';
+var VIDEOS={
+  3:'6a3485fe98cf7db0048750e9',
+  20:'6a3485e71c7534aa0c18a37b',
+  24:'6a3485d12e74b140262d896d'
+};
+function mountVideo(n){
+  var pid=VIDEOS[n]; if(!pid) return;
+  var slot=els[n] && els[n].querySelector('.video-slot');
+  if(!slot || slot._mounted) return; slot._mounted=true;
+  slot.style.background='transparent'; slot.style.minHeight='0';
+  slot.innerHTML='<vturb-smartplayer id="vid-'+pid+'" style="display:block;margin:0 auto;width:100%;max-width:300px;"></vturb-smartplayer>';
+  var s=document.createElement('script'); s.type='text/javascript';
+  s.src='https://scripts.converteai.net/'+VTURB_ACCOUNT+'/players/'+pid+'/v4/player.js'; s.async=true;
+  document.head.appendChild(s);
+}
+function pauseMediaIn(root){
+  if(!root) return;
+  try{ (root.querySelectorAll?root.querySelectorAll('video,audio'):[]).forEach(function(m){ try{ m.pause(); m.muted=true; m.volume=0; }catch(e){} }); }catch(e){}
+  try{ (root.querySelectorAll?root.querySelectorAll('*'):[]).forEach(function(el){ if(el.shadowRoot) pauseMediaIn(el.shadowRoot); }); }catch(e){}
+}
+function pauseVideosExcept(n){
+  Object.keys(VIDEOS).forEach(function(k){
+    if(+k===n) return;
+    var slot=els[k] && els[k].querySelector('.video-slot');
+    if(!slot) return;
+    pauseMediaIn(slot);            // tenta pausar (caso seja <video>)
+    if(slot._mounted){             // garante parada total destruindo o player (iframe vturb)
+      slot.innerHTML='';
+      slot._mounted=false;
+    }
+  });
+}
+
+/* =================== LOADING + PLANO (cálculo local) =================== */
+function startLoading(){
+  state.name = (document.getElementById('user-name').value||'').trim();
+  ans('altura_cm', Math.round(state.heightCm));
+  ans('peso_kg', Math.round(state.weightKg));
+  ans('meta_kg', Math.round(state.targetKg));
+  var ov=document.getElementById('loading'); ov.classList.add('show');
+  var lr=document.getElementById('lring'), pct=document.getElementById('lpct');
+  var steps=ov.querySelectorAll('.lstep'); steps.forEach(function(s){s.classList.remove('done');});
+  var p=0; lr.style.setProperty('--p',0); pct.textContent='0%';
+  var planReady=false; buildPlan().then(function(){ planReady=true; });
+  var iv=setInterval(function(){
+    p+=2; if(p>=98 && !planReady) p=98; if(p>100)p=100;
+    lr.style.setProperty('--p',p); pct.textContent=p+'%';
+    steps.forEach(function(s){ if(p>= (+s.dataset.i+1)*23) s.classList.add('done'); });
+    if(p>=100 && planReady){ clearInterval(iv); setTimeout(function(){ ov.classList.remove('show'); show(29); renderPlanAnim(); },350); }
+  },45);
+}
+
+var PLAN=null;
+function localPlan(){
+  var male=state.sex==='Mann', cm=state.heightCm, kg=state.weightKg, tg=state.targetKg, age=state.age;
+  var bmr=10*kg+6.25*cm-5*age+(male?5:-161);
+  var act={sed:1.2,light:1.375,mod:1.55,active:1.725,very:1.9}[state.activity]||1.375;
+  var kcal=Math.round(bmr*act/10)*10;
+  var protein=Math.round(2.1*kg);
+  var fat=Math.round(kcal*0.28/9);
+  var carbs=Math.max(60,Math.round((kcal-protein*4-fat*9)/4));
+  var fiber=Math.min(45,Math.round(kcal/72));
+  var water=Math.round(kg*0.033*10)/10;
+  var loss=Math.max(0,kg-tg);
+  var weeks=Math.max(4,Math.round(loss/1));
+  var date=addDays(new Date(),weeks*7);
+  var bmi=curBmi(), bmi2=tg/Math.pow(cm/100,2);
+  return {kcal:kcal,protein:protein,carbs:carbs,fat:fat,fiber:fiber,water:water,loss:loss,
+    dateStr:date.getDate()+'. '+MESES[date.getMonth()]+' '+date.getFullYear(),
+    bmi:bmi,bmi2:bmi2,aiNote:''};
+}
+async function buildPlan(){
+  PLAN=localPlan();
+}
+function renderPlanAnim(){
+  var s=state, p=PLAN;
+  var nm = s.name || 'Dein Plan';
+  document.getElementById('plan-head').innerHTML = (s.name? s.name+', dein' : 'Dein') + ' Plan, um <span class="gold">'+nf(p.loss)+' kg</span> mit '+ (s.med==='Andere'? (s.medOther||'GLP-1') : s.med) +' abzunehmen, ist fertig!';
+  document.getElementById('pl-cw').textContent=nf(s.weightKg)+' kg';
+  document.getElementById('pl-gw').textContent=nf(s.targetKg)+' kg';
+  document.getElementById('pl-date').textContent=p.dateStr;
+  document.getElementById('pl-water').textContent=nf(p.water)+'L';
+  document.getElementById('pl-fiber').textContent=p.fiber+'g';
+  document.getElementById('pl-medname').textContent='Nächste Anwendung';
+  document.getElementById('pl-freq').textContent=(s.med==='Andere'?(s.medOther||'GLP-1'):s.med);
+  document.getElementById('pl-medline').textContent= s.freq + (s.dose && s.dose!=='Nicht sicher' ? ' · '+s.dose : '');
+  document.getElementById('pl-bmi').textContent=nf(p.bmi).replace(',','.');
+  document.getElementById('pl-bmi2').textContent=nf(p.bmi2).replace(',','.');
+  var c=bmiCat(p.bmi); var tg=document.getElementById('pl-cat'); tg.textContent=c[0]; tg.className='tag '+(c[1]==='ok'?'ok':'warn');
+  document.getElementById('pl-mk').style.left=Math.max(2,Math.min(98,(p.bmi-15)/30*100))+'%';
+  // rings data
+  setRing('flame',p.kcal, 3000); // ring values
+  // set ring data-num + percent
+  var rings=els[29].querySelectorAll('.ring');
+  var map=[{num:p.kcal,pct:Math.min(95,p.kcal/3200*100),suf:''},{num:p.protein,pct:Math.min(95,p.protein/250*100),suf:'g'},{num:p.carbs,pct:Math.min(95,p.carbs/350*100),suf:'g'},{num:p.fat,pct:Math.min(95,p.fat/120*100),suf:'g'}];
+  rings.forEach(function(r,i){ var b=r.querySelector('b'); b.setAttribute('data-num',map[i].num); b.setAttribute('data-suffix',map[i].suf); r.setAttribute('data-p',Math.round(map[i].pct)); });
+  if(p.aiNote){ document.getElementById('pl-ai-note').style.display='block'; document.getElementById('pl-ai-text').textContent=p.aiNote; }
+  // animate rings/glass/bar/countup
+  setTimeout(function(){
+    els[29].querySelectorAll('.ring').forEach(function(r){
+      r.style.setProperty('--p', r.getAttribute('data-p'));
+      var b=r.querySelector('b[data-num]'); if(b) countUp(b);
+    });
+    var g=els[29].querySelector('.glass .fill'); if(g) g.style.height=Math.min(85,p.water/4*100)+'%';
+    var pb=els[29].querySelector('.pbar i'); if(pb) pb.style.width=Math.min(95,p.fiber/45*100)+'%';
+  },200);
+}
+function setRing(){}
+function countUp(el){
+  var t=parseFloat(el.getAttribute('data-num'))||0, suf=el.getAttribute('data-suffix')||'', t0=null;
+  function fr(ts){ if(t0===null)t0=ts; var pr=Math.min(1,(ts-t0)/1200), e=1-Math.pow(1-pr,3); el.textContent=Math.round(t*e)+suf; if(pr<1)requestAnimationFrame(fr); else el.textContent=t+suf; }
+  requestAnimationFrame(fr);
+}
+
+/* =================== CHECKOUT =================== */
+var CHECKOUT_URL='https://www.checkout-ds24.com/product/703296';
+function doCheckout(){
+  cta.textContent='Weiterleitung …';
+  try{ if(window.HMTrack) HMTrack.event('checkout_redirect', { url: CHECKOUT_URL }); }catch(e){}
+  window.location.href = CHECKOUT_URL;
+}
+
+/* etapa 28 botão SIM */
+document.getElementById('commit-yes').addEventListener('click', function(){ this.classList.add('sel'); startLoading(); });
+/* etapa 32 botões de compra */
+document.querySelectorAll('.co-buy').forEach(function(b){ b.addEventListener('click', doCheckout); });
+
+/* =================== INIT =================== */
+rH(true); rW(true); rT(true); show(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export type Project = {
+  id: string;
+  slug: string;
+  name: string;
+  type: string;
+  total_steps: number | null;
+  step_names: Record<string, string> | null;
+  active: boolean;
+  hosting: string | null; // 'repo' | 'storage'
+  created_at: string;
+};
+
+/** Public URL of a project's live quiz/page (campaign link). */
+export function liveUrl(p: Pick<Project, "slug" | "hosting">): string {
+  return p.hosting === "storage"
+    ? `/q/${p.slug}/`
+    : `/quizzes/${p.slug}/index.html`;
+}
+
+export type Overview = {
+  sessions: number;
+  visitors: number;
+  completed: number;
+  avg_duration_ms: number | null;
+};
+
+export type FunnelRow = { step_index: number; sessions_reached: number };
+export type TimingRow = {
+  step_index: number;
+  avg_ms: number;
+  median_ms: number;
+  samples: number;
+};
+export type CampaignRow = {
+  source: string;
+  campaign: string;
+  cid: string;
+  sessions: number;
+  completed: number;
+  avg_max_step: number;
+};
+
+export type SessionRow = {
+  session_id: string;
+  visitor_id: string;
+  utm: Record<string, string> | null;
+  cid: string | null;
+  referrer: string | null;
+  country: string | null;
+  device: string | null;
+  started_at: string;
+  last_event_at: string;
+  max_step: number;
+  duration_ms: number;
+  completed: boolean;
+};
+
+export type EventRow = {
+  id: number;
+  type: string;
+  step_index: number | null;
+  step_name: string | null;
+  duration_ms: number | null;
+  meta: any;
+  created_at: string;
+};
+
+/** Default window: last N days -> [from, to) ISO strings. */
+export function windowFromRange(range: string): { from: string; to: string } {
+  const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
+  const to = new Date();
+  const from = new Date(to.getTime() - days * 864e5);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+export async function getProjects(): Promise<Project[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending: true });
+  return (data as Project[]) || [];
+}
+
+export async function getProject(id: string): Promise<Project | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as Project) || null;
+}
+
+export async function getOverview(
+  id: string,
+  from: string,
+  to: string
+): Promise<Overview> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_overview", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  const row = (data && data[0]) || {};
+  return {
+    sessions: Number(row.sessions || 0),
+    visitors: Number(row.visitors || 0),
+    completed: Number(row.completed || 0),
+    avg_duration_ms: row.avg_duration_ms != null ? Number(row.avg_duration_ms) : null,
+  };
+}
+
+export async function getFunnel(
+  id: string,
+  from: string,
+  to: string
+): Promise<FunnelRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_funnel", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    step_index: Number(r.step_index),
+    sessions_reached: Number(r.sessions_reached),
+  }));
+}
+
+export async function getTiming(
+  id: string,
+  from: string,
+  to: string
+): Promise<TimingRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_step_timing", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    step_index: Number(r.step_index),
+    avg_ms: Number(r.avg_ms || 0),
+    median_ms: Number(r.median_ms || 0),
+    samples: Number(r.samples || 0),
+  }));
+}
+
+export async function getCampaigns(
+  id: string,
+  from: string,
+  to: string
+): Promise<CampaignRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_campaigns", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    source: r.source || "(direto)",
+    campaign: r.campaign || "",
+    cid: r.cid || "",
+    sessions: Number(r.sessions || 0),
+    completed: Number(r.completed || 0),
+    avg_max_step: Number(r.avg_max_step || 0),
+  }));
+}
+
+export async function getSessions(
+  id: string,
+  from: string,
+  to: string,
+  limit = 100
+): Promise<SessionRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("sessions")
+    .select(
+      "session_id,visitor_id,utm,cid,referrer,country,device,started_at,last_event_at,max_step,duration_ms,completed"
+    )
+    .eq("project_id", id)
+    .gte("started_at", from)
+    .lt("started_at", to)
+    .order("started_at", { ascending: false })
+    .limit(limit);
+  return (data as SessionRow[]) || [];
+}
+
+export async function getSession(sessionId: string): Promise<SessionRow | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("sessions")
+    .select(
+      "session_id,visitor_id,utm,cid,referrer,country,device,started_at,last_event_at,max_step,duration_ms,completed"
+    )
+    .eq("session_id", sessionId)
+    .maybeSingle();
+  return (data as SessionRow) || null;
+}
+
+export async function getSessionEvents(sessionId: string): Promise<EventRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("events")
+    .select("id,type,step_index,step_name,duration_ms,meta,created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(2000);
+  return (data as EventRow[]) || [];
+}
