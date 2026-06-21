@@ -4,59 +4,72 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 /**
- * Refreshes the Supabase auth session on each request and guards the
- * dashboard. Public routes: /login, /p/* (hosted quizzes), /track.js,
- * /api/collect, and static assets.
+ * Lightweight auth gate. Runs in the Edge runtime, so it must never throw —
+ * a thrown error here 500s every route (MIDDLEWARE_INVOCATION_FAILED).
+ *
+ * It tries to refresh the Supabase session (the recommended pattern), but if
+ * anything fails (missing env, Edge/supabase quirk, network) it falls back to
+ * a cheap cookie-presence check. The real validation happens in the
+ * (dashboard) layout, which runs in Node where supabase-js is fully supported.
  */
+function hasAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.includes("-auth-token"));
+}
+
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login");
 
-  if (!user && !isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  let response = NextResponse.next({ request });
+  let isLoggedIn = false;
+
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (url && key) {
+      const supabase = createServerClient(url, key, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet: CookieToSet[]) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            response = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
+          },
+        },
+      });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      isLoggedIn = !!user;
+    } else {
+      isLoggedIn = hasAuthCookie(request);
+    }
+  } catch {
+    // Never 500 the site — fall back to cookie presence.
+    isLoggedIn = hasAuthCookie(request);
   }
 
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+  if (!isLoggedIn && !isAuthRoute) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    return NextResponse.redirect(redirectUrl);
+  }
+  if (isLoggedIn && isAuthRoute) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    return NextResponse.redirect(redirectUrl);
   }
 
   return response;
 }
 
 export const config = {
-  // Run on dashboard routes only. Everything public (quizzes, tracker,
-  // collector, static assets, Next internals) is excluded here.
   matcher: [
     "/((?!q/|api/collect|track.js|quizzes/|_next/static|_next/image|favicon.ico).*)",
   ],
