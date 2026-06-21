@@ -29,16 +29,8 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-bg">
       <form onSubmit={onSubmit} className="w-full max-w-sm card card-pad">
-        <div className="flex items-center gap-2.5 mb-6">
-          <span className="grid place-items-center w-9 h-9 rounded-lg bg-ink text-white">
-            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M7 14l3-3 3 3 5-6" /></svg>
-          </span>
-          <div>
-            <div className="font-black text-ink leading-tight tracking-tight">
-              Funnel<span className="text-brand-600">Tracker</span>
-            </div>
-            <div className="text-xs text-slate-400">Entre para ver seus funis</div>
-          </div>
+        <div className="flex justify-center items-center gap-2.5 mb-6 mx-auto">
+          <img className="max-w-32" src="https://wd-negocios.com/logo2.png" alt="" />
         </div>
 
         <label className="label">E-mail</label>
@@ -68,6 +60,9 @@ export default function LoginPage() {
         <button type="submit" disabled={loading} className="btn-primary w-full py-3">
           {loading ? "Entrando…" : "Entrar"}
         </button>
+        <div className="text-xs text-gray-300 flex itens-cemter justify-center max-auto mt-4">
+          <p>Desenvolvido por <a href="https://codenxt.online">CODENXT</a></p>
+        </div>
       </form>
     </main>
   );

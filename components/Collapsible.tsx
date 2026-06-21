@@ -6,12 +6,14 @@ export default function Collapsible({
   title,
   subtitle,
   summary,
+  icon,
   defaultOpen = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   summary?: React.ReactNode;
+  icon?: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
@@ -23,9 +25,16 @@ export default function Collapsible({
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 text-left hover:bg-slate-50/60 transition"
       >
-        <div className="min-w-0">
-          <h2 className="font-bold text-ink">{title}</h2>
-          {subtitle && <p className="text-[13px] text-slate-400">{subtitle}</p>}
+        <div className="flex items-center gap-3 min-w-0">
+          {icon && (
+            <span className="grid place-items-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 shrink-0">
+              {icon}
+            </span>
+          )}
+          <div className="min-w-0">
+            <h2 className="font-bold text-ink">{title}</h2>
+            {subtitle && <p className="text-[13px] text-slate-400">{subtitle}</p>}
+          </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {!open && summary && (

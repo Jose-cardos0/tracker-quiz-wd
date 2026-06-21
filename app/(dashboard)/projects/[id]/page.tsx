@@ -14,6 +14,23 @@ import { buildInsights } from "@/lib/insights";
 import RangeTabs from "@/components/RangeTabs";
 import Collapsible from "@/components/Collapsible";
 import FunnelChart from "@/components/FunnelChart";
+import {
+  Activity,
+  Users,
+  Target,
+  Clock,
+  LineChart,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  AlertOctagon,
+  Filter,
+  Timer,
+  Megaphone,
+  ArrowUpRight,
+  Pencil,
+  type LucideIcon,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -97,10 +114,10 @@ export default async function ProjectPage({
         </div>
         <div className="flex items-center gap-2">
           <a href={liveUrl(project)} target="_blank" rel="noreferrer" className="btn-ghost text-sm">
-            Abrir ↗
+            <ArrowUpRight className="w-4 h-4" /> Abrir
           </a>
           <Link href={`/projects/${project.id}/settings`} className="btn-ghost text-sm">
-            Editar
+            <Pencil className="w-3.5 h-3.5" /> Editar
           </Link>
           <Link
             href={`/projects/${project.id}/sessions?range=${range}`}
@@ -117,21 +134,43 @@ export default async function ProjectPage({
 
       {/* overview cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <Card label="Sessões" value={ov.sessions.toLocaleString("pt-BR")} />
-        <Card label="Visitantes únicos" value={ov.visitors.toLocaleString("pt-BR")} />
-        <Card
+        <StatCard
+          icon={Activity}
+          label="Sessões"
+          value={ov.sessions.toLocaleString("pt-BR")}
+          grad="from-indigo-500 to-violet-500"
+        />
+        <StatCard
+          icon={Users}
+          label="Visitantes únicos"
+          value={ov.visitors.toLocaleString("pt-BR")}
+          grad="from-sky-500 to-cyan-500"
+        />
+        <StatCard
+          icon={Target}
           label="Taxa de conclusão"
           value={pct(ov.completed, ov.sessions)}
           sub={`${ov.completed} concluíram`}
-          accent
+          grad="from-emerald-500 to-teal-500"
         />
-        <Card label="Tempo médio" value={fmtDuration(ov.avg_duration_ms)} />
+        <StatCard
+          icon={Clock}
+          label="Tempo médio"
+          value={fmtDuration(ov.avg_duration_ms)}
+          grad="from-amber-500 to-orange-500"
+        />
       </div>
 
       {/* line chart: retention vs time */}
-      <section className="card card-pad mb-6">
-        <h2 className="font-bold text-ink">Relação entre as etapas</h2>
-        <p className="text-[13px] text-slate-400 mb-2">
+      <section className="card card-pad mb-6 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br from-brand-500 to-violet-500 opacity-[0.06]" />
+        <div className="flex items-center gap-2">
+          <span className="grid place-items-center w-7 h-7 rounded-lg bg-brand-50 text-brand-600">
+            <LineChart className="w-4 h-4" strokeWidth={2.2} />
+          </span>
+          <h2 className="font-bold text-ink">Relação entre as etapas</h2>
+        </div>
+        <p className="text-[13px] text-slate-400 mb-3 mt-0.5">
           Retenção × tempo gasto — onde o funil perde gente e onde prende.
         </p>
         <FunnelChart data={chartData} />
@@ -139,34 +178,57 @@ export default async function ProjectPage({
 
       {/* mini report */}
       <section className="card card-pad mb-6">
-        <h2 className="font-bold text-ink">Relatório rápido</h2>
-        <p className="text-[13px] text-slate-400 mb-4">Leitura automática do funil.</p>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="grid place-items-center w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-violet-500 text-white">
+            <Sparkles className="w-4 h-4" strokeWidth={2.2} />
+          </span>
+          <div>
+            <h2 className="font-bold text-ink leading-tight">Relatório rápido</h2>
+            <p className="text-[12px] text-slate-400">Leitura automática do funil</p>
+          </div>
+        </div>
         {insights.length === 0 ? (
           <p className="text-sm text-slate-400">
             Sem dados suficientes para gerar o relatório.
           </p>
         ) : (
-          <ul className="space-y-2.5">
-            {insights.map((it, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm">
-                <span
-                  className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                    it.tone === "good"
-                      ? "bg-emerald-500"
-                      : it.tone === "warn"
-                      ? "bg-amber-500"
-                      : "bg-rose-500"
-                  }`}
-                />
-                <span className="text-slate-700">{it.text}</span>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {insights.map((it, i) => {
+              const Icon =
+                it.tone === "good"
+                  ? CheckCircle2
+                  : it.tone === "warn"
+                  ? AlertTriangle
+                  : AlertOctagon;
+              const tints =
+                it.tone === "good"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : it.tone === "warn"
+                  ? "bg-amber-50 text-amber-600"
+                  : "bg-rose-50 text-rose-600";
+              return (
+                <li
+                  key={i}
+                  className="flex items-start gap-3 rounded-xl p-2.5 hover:bg-slate-50 transition"
+                >
+                  <span
+                    className={`mt-0.5 grid place-items-center w-6 h-6 rounded-lg shrink-0 ${tints}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" strokeWidth={2.4} />
+                  </span>
+                  <span className="text-[13.5px] text-slate-700 leading-relaxed">
+                    {it.text}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
       {/* funnel */}
       <Collapsible
+        icon={<Filter className="w-4 h-4" strokeWidth={2.2} />}
         title="Funil por etapa"
         subtitle="Sessões que alcançaram cada etapa"
         summary={
@@ -180,52 +242,76 @@ export default async function ProjectPage({
         {funnel.length === 0 ? (
           <Empty />
         ) : (
-          <div className="space-y-2">
-            {funnel.map((row, idx) => {
-              const reached = row.sessions_reached;
-              const widthPct = base ? (reached / base) * 100 : 0;
-              const prev = idx > 0 ? funnel[idx - 1].sessions_reached : reached;
-              const dropPct = prev ? Math.round(((prev - reached) / prev) * 100) : 0;
-              const isWorst = row.step_index === worstDrop.step && worstDrop.lost > 0;
-              return (
-                <div key={row.step_index} className="flex items-center gap-3">
-                  <div className="w-6 text-right text-xs font-bold text-slate-300 tabular-nums">
-                    {row.step_index}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between text-[13px] mb-1">
-                      <span className="font-semibold text-slate-700 truncate">
-                        {stepName(row.step_index)}
-                      </span>
-                      <span className="text-slate-500 tabular-nums shrink-0 pl-3">
-                        {reached.toLocaleString("pt-BR")}
-                        <span className="text-slate-300"> · </span>
-                        {pct(reached, base)}
-                        {idx > 0 && dropPct > 0 && (
-                          <span
-                            className={
-                              isWorst
-                                ? "text-rose-600 font-bold ml-2"
-                                : "text-slate-400 ml-2"
-                            }
-                          >
-                            −{dropPct}%
+          <div className="relative pl-1">
+            {/* connecting timeline line behind the badges */}
+            <div className="absolute left-[19px] top-5 bottom-5 w-0.5 bg-slate-100 rounded" />
+            <div className="space-y-3">
+              {funnel.map((row, idx) => {
+                const reached = row.sessions_reached;
+                const widthPct = base ? (reached / base) * 100 : 0;
+                const retPct = base ? Math.round((reached / base) * 100) : 0;
+                const prev = idx > 0 ? funnel[idx - 1].sessions_reached : reached;
+                const dropPct = prev
+                  ? Math.round(((prev - reached) / prev) * 100)
+                  : 0;
+                const isWorst =
+                  row.step_index === worstDrop.step && worstDrop.lost > 0;
+                return (
+                  <div key={row.step_index} className="relative flex items-center gap-3.5">
+                    <div
+                      className={`relative z-10 w-8 h-8 shrink-0 rounded-full grid place-items-center text-xs font-extrabold ring-4 ring-white ${
+                        isWorst
+                          ? "bg-rose-100 text-rose-600"
+                          : "bg-brand-50 text-brand-600"
+                      }`}
+                    >
+                      {row.step_index}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3 mb-1.5">
+                        <span className="text-[13px] font-semibold text-slate-700 truncate">
+                          {stepName(row.step_index)}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {idx > 0 && dropPct > 0 && (
+                            <span
+                              className={`text-[11px] font-bold rounded-full px-1.5 py-0.5 ${
+                                isWorst
+                                  ? "bg-rose-100 text-rose-700"
+                                  : "bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              −{dropPct}%
+                            </span>
+                          )}
+                          <span className="text-[13px] tabular-nums text-slate-400">
+                            <b className="text-ink">
+                              {reached.toLocaleString("pt-BR")}
+                            </b>{" "}
+                            · {retPct}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-7 rounded-lg bg-slate-50 ring-1 ring-slate-100 overflow-hidden relative">
+                        <div
+                          className={`h-full rounded-lg transition-all duration-500 ${
+                            isWorst
+                              ? "bg-gradient-to-r from-rose-400 to-rose-500"
+                              : "bg-gradient-to-r from-brand-400 to-brand-600"
+                          }`}
+                          style={{ width: `${Math.max(widthPct, 3)}%` }}
+                        />
+                        {retPct >= 16 && (
+                          <span className="absolute inset-y-0 left-2.5 flex items-center text-[11px] font-bold text-white/95">
+                            {retPct}%
                           </span>
                         )}
-                      </span>
-                    </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          isWorst ? "bg-rose-400" : "bg-brand-500"
-                        }`}
-                        style={{ width: `${Math.max(widthPct, 1.5)}%` }}
-                      />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
         {worstDrop.lost > 0 && (
@@ -241,6 +327,7 @@ export default async function ProjectPage({
 
       {/* timing */}
       <Collapsible
+        icon={<Timer className="w-4 h-4" strokeWidth={2.2} />}
         title="Tempo por etapa"
         subtitle="Mediana de tempo gasto em cada etapa"
         summary={slowest > 0 ? <>máx {fmtDuration(slowest)}</> : null}
@@ -284,6 +371,7 @@ export default async function ProjectPage({
 
       {/* campaigns */}
       <Collapsible
+        icon={<Megaphone className="w-4 h-4" strokeWidth={2.2} />}
         title="Campanhas"
         subtitle="Origem das sessões (UTM / cid)"
         summary={
@@ -332,27 +420,33 @@ export default async function ProjectPage({
   );
 }
 
-function Card({
+function StatCard({
+  icon: Icon,
   label,
   value,
   sub,
-  accent,
+  grad,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string;
   sub?: string;
-  accent?: boolean;
+  grad: string;
 }) {
   return (
-    <div className="card card-pad">
+    <div className="card card-pad relative overflow-hidden">
       <div
-        className={`text-[26px] font-black tracking-tight ${
-          accent ? "text-brand-600" : "text-ink"
-        }`}
+        className={`absolute -right-5 -top-5 w-20 h-20 rounded-full bg-gradient-to-br ${grad} opacity-10`}
+      />
+      <span
+        className={`grid place-items-center w-9 h-9 rounded-xl text-white bg-gradient-to-br ${grad} shadow-sm mb-3`}
       >
+        <Icon className="w-[18px] h-[18px]" strokeWidth={2.2} />
+      </span>
+      <div className="text-[26px] font-black tracking-tight text-ink leading-none">
         {value}
       </div>
-      <div className="stat-label mt-1">{label}</div>
+      <div className="stat-label mt-1.5">{label}</div>
       {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
     </div>
   );
