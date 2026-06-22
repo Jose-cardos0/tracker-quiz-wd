@@ -174,22 +174,30 @@ export default function ExternalQuizPage() {
             <div>
               <div className="font-bold text-ink">Projeto criado!</div>
               <div className="text-sm text-slate-500">
-                Cole o script abaixo no <code className="text-xs">&lt;head&gt;</code>{" "}
-                da página externa.
+                Agora é só ativar o tracking na sua página.
               </div>
             </div>
           </div>
 
-          <div className="relative">
-            <pre className="bg-slate-900 text-slate-100 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed">
-              {result.snippet}
-            </pre>
+          <div>
+            <p className="text-sm font-semibold text-ink mb-2">
+              Copie e cole no{" "}
+              <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">
+                &lt;head&gt;
+              </code>{" "}
+              da sua página:
+            </p>
+            <div className="relative">
+              <pre className="bg-slate-900 text-slate-100 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed">
+                {result.snippet}
+              </pre>
             <button
               onClick={copy}
               className="absolute top-2.5 right-2.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white rounded-lg px-2.5 py-1.5 transition"
             >
               {copied ? "Copiado!" : "Copiar"}
             </button>
+            </div>
           </div>
 
           <div className="rounded-xl bg-brand-50 text-brand-700 text-[13px] p-3.5 leading-relaxed">

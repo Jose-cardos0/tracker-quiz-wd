@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import AddQuizButton from "@/components/AddQuizButton";
 
 export default function Header() {
   const router = useRouter();
@@ -20,13 +21,8 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Link href="/new" className="btn-brand text-sm h-9 px-3.5">
-            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Adicionar quiz
-          </Link>
-      
+          <AddQuizButton />
+
           <button onClick={logout} className="btn-ghost text-sm h-9">
             Sair
           </button>
