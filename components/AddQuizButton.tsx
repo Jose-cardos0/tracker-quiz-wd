@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Plus, Upload, Globe, X, ChevronRight } from "lucide-react";
 
 export default function AddQuizButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -31,13 +35,15 @@ export default function AddQuizButton() {
         Adicionar quiz
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-md card p-6">
+      {open &&
+        mounted &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] grid place-items-center p-4">
+            <div
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <div className="relative z-10 w-full max-w-md card p-6">
             <button
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-ink transition"
@@ -68,8 +74,9 @@ export default function AddQuizButton() {
               />
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
