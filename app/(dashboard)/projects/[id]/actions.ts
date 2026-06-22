@@ -67,6 +67,7 @@ async function removeFolder(prefix: string) {
 export async function deleteProject(formData: FormData) {
   await requireUser();
   const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Projeto inválido");
   const admin = createAdminClient();
 
   const { data: proj } = await admin
@@ -75,13 +76,43 @@ export async function deleteProject(formData: FormData) {
     .eq("id", id)
     .maybeSingle();
 
+  // 1) arquivos do Storage (se hospedado aqui)
   if (proj?.hosting === "storage" && proj.slug) {
     await removeFolder(proj.slug);
   }
 
-  await admin.from("events").delete().eq("project_id", id);
-  await admin.from("sessions").delete().eq("project_id", id);
-  await admin.from("projects").delete().eq("id", id);
+  // 2) coleta os visitantes deste projeto (antes de apagar as sessões)
+  const { data: sess } = await admin
+    .from("sessions")
+    .select("visitor_id")
+    .eq("project_id", id);
+  const vids = Array.from(
+    new Set((sess || []).map((s) => s.visitor_id).filter(Boolean))
+  ) as string[];
+
+  // 3) apaga eventos, sessões e o projeto (surfaceia erros)
+  const e1 = await admin.from("events").delete().eq("project_id", id);
+  const e2 = await admin.from("sessions").delete().eq("project_id", id);
+  const e3 = await admin.from("projects").delete().eq("id", id);
+  const err = e1.error || e2.error || e3.error;
+  if (err) throw new Error("Falha ao excluir: " + err.message);
+
+  // 4) remove visitantes que ficaram sem NENHUMA sessão (em qualquer projeto)
+  if (vids.length) {
+    const orphans: string[] = [];
+    for (let i = 0; i < vids.length; i += 200) {
+      const chunk = vids.slice(i, i + 200);
+      const { data: still } = await admin
+        .from("sessions")
+        .select("visitor_id")
+        .in("visitor_id", chunk);
+      const keep = new Set((still || []).map((s) => s.visitor_id));
+      chunk.forEach((v) => !keep.has(v) && orphans.push(v));
+    }
+    for (let i = 0; i < orphans.length; i += 200) {
+      await admin.from("visitors").delete().in("visitor_id", orphans.slice(i, i + 200));
+    }
+  }
 
   revalidatePath("/");
   redirect("/");
