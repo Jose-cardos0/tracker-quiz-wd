@@ -68,13 +68,25 @@ export async function POST(req: NextRequest) {
   }
 
   // --- register: cria/atualiza o projeto ----------------------------------
-  if (body.action === "register") {
+  if (body.action === "register" || body.action === "register-external") {
     const total =
       typeof body.totalSteps === "number"
         ? body.totalSteps
         : body.totalSteps && !isNaN(+body.totalSteps)
         ? +body.totalSteps
         : null;
+
+    const external = body.action === "register-external";
+    let externalUrl: string | null = null;
+    if (external) {
+      externalUrl = String(body.externalUrl || "").trim();
+      if (!/^https?:\/\//i.test(externalUrl)) {
+        return NextResponse.json(
+          { error: "URL externa inválida (precisa começar com http/https)" },
+          { status: 400 }
+        );
+      }
+    }
 
     const { data, error } = await admin
       .from("projects")
@@ -84,8 +96,9 @@ export async function POST(req: NextRequest) {
           name: String(body.name || slug),
           type: body.type === "page" ? "page" : "quiz",
           total_steps: total,
-          hosting: "storage",
-          storage_path: slug,
+          hosting: external ? "external" : "storage",
+          storage_path: external ? null : slug,
+          external_url: externalUrl,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "slug" }

@@ -151,7 +151,9 @@
 
     if (useBeacon && navigator.sendBeacon) {
       try {
-        var blob = new Blob([payload], { type: "application/json" });
+        // text/plain = tipo "safelisted" do CORS -> beacon funciona cross-domain
+        // sem preflight. O servidor faz JSON.parse do corpo de qualquer forma.
+        var blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
         navigator.sendBeacon(cfg.endpoint, blob);
         return;
       } catch (e) { /* cai pro fetch */ }

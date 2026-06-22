@@ -8,15 +8,18 @@ export type Project = {
   total_steps: number | null;
   step_names: Record<string, string> | null;
   active: boolean;
-  hosting: string | null; // 'repo' | 'storage'
+  hosting: string | null; // 'repo' | 'storage' | 'external'
+  external_url: string | null;
   created_at: string;
 };
 
 /** Public URL of a project's live quiz/page (campaign link). */
-export function liveUrl(p: Pick<Project, "slug" | "hosting">): string {
-  return p.hosting === "storage"
-    ? `/q/${p.slug}/`
-    : `/quizzes/${p.slug}/index.html`;
+export function liveUrl(
+  p: Pick<Project, "slug" | "hosting" | "external_url">
+): string {
+  if (p.hosting === "external") return p.external_url || "#";
+  if (p.hosting === "storage") return `/q/${p.slug}/`;
+  return `/quizzes/${p.slug}/index.html`;
 }
 
 export type Overview = {

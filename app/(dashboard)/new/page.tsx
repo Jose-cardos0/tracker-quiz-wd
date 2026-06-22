@@ -337,6 +337,13 @@ export default function NewQuizPage() {
           grandes podem demorar um pouco.
         </p>
       </form>
+
+      <p className="text-center text-sm text-slate-500 mt-5">
+        Seu quiz está em outro domínio?{" "}
+        <Link href="/external" className="font-semibold text-brand-600 hover:underline">
+          Trackear domínio externo →
+        </Link>
+      </p>
     </div>
   );
 }
