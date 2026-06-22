@@ -203,14 +203,21 @@ export default function ExternalQuizPage() {
           <div className="rounded-xl bg-brand-50 text-brand-700 text-[13px] p-3.5 leading-relaxed space-y-2">
             <p>
               <b>Pronto.</b> Assim que alguém acessar a página, os eventos já
-              aparecem no dashboard.
+              aparecem no dashboard. Sem etiquetas, a origem aparece como
+              “direto” (mas é trackeada do mesmo jeito).
             </p>
             <p>
-              💡 <b>Nos seus anúncios</b>, use o link com etiquetas pra saber a
-              origem de cada pessoa (senão aparece como “direto”):
+              💡 <b>Nos anúncios do Facebook</b>, use o link com etiquetas. O{" "}
+              <code className="text-[11px]">utm_source</code> você fixa como{" "}
+              <code className="text-[11px]">facebook</code>; os campos{" "}
+              <code className="text-[11px]">{`{{...}}`}</code> o{" "}
+              <b>próprio Facebook preenche</b> com o nome real da
+              campanha/anúncio:
             </p>
             <code className="block text-[11px] bg-white/70 rounded-lg p-2 break-all">
-              {url || "sua-url-do-quiz"}?utm_source=facebook&amp;utm_campaign=promo&amp;cid=anuncio1
+              {`${
+                url || "sua-url-do-quiz"
+              }?utm_source=facebook&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&cid={{ad.id}}`}
             </code>
           </div>
 

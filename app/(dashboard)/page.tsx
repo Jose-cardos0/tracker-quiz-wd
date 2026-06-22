@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getProjects, getOverview, windowFromRange, liveUrl } from "@/lib/data";
 import { pct } from "@/lib/format";
+import DeleteFunnelButton from "@/components/DeleteFunnelButton";
 
 export const dynamic = "force-dynamic";
 
@@ -48,36 +49,43 @@ export default async function HomePage() {
           {withStats.map(({ project: p, ov }) => {
             const conv = pct(ov.completed, ov.sessions);
             return (
-              <Link
-                key={p.id}
-                href={`/projects/${p.id}`}
-                className="group card card-pad transition hover:shadow-cardhover hover:-translate-y-0.5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-bold text-ink truncate">{p.name}</div>
-                    <div className="text-xs text-slate-400 mt-0.5 font-mono truncate">
-                      {liveUrl(p)}
+              <div key={p.id} className="relative group">
+                <Link
+                  href={`/projects/${p.id}`}
+                  className="block card card-pad transition hover:shadow-cardhover hover:-translate-y-0.5"
+                >
+                  <div className="flex items-start gap-2 pr-9">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-ink truncate">{p.name}</span>
+                        <span
+                          className={p.type === "page" ? "pill-amber" : "pill-slate"}
+                        >
+                          {p.type}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5 font-mono truncate">
+                        {liveUrl(p)}
+                      </div>
                     </div>
                   </div>
-                  <span
-                    className={
-                      p.type === "page" ? "pill-amber" : "pill-slate"
-                    }
-                  >
-                    {p.type}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
-                  <Stat label="Sessões" value={ov.sessions.toLocaleString("pt-BR")} />
-                  <Stat
-                    label="Visitantes"
-                    value={ov.visitors.toLocaleString("pt-BR")}
-                  />
-                  <Stat label="Conclusão" value={conv} accent />
-                </div>
-              </Link>
+                  <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
+                    <Stat label="Sessões" value={ov.sessions.toLocaleString("pt-BR")} />
+                    <Stat
+                      label="Visitantes"
+                      value={ov.visitors.toLocaleString("pt-BR")}
+                    />
+                    <Stat label="Conclusão" value={conv} accent />
+                  </div>
+                </Link>
+
+                <DeleteFunnelButton
+                  id={p.id}
+                  name={p.name}
+                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
+              </div>
             );
           })}
         </div>
