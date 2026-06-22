@@ -19,7 +19,7 @@ export default async function SettingsPage({
   const steps = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl mx-auto">
       <Link
         href={`/projects/${project.id}`}
         className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-ink transition"

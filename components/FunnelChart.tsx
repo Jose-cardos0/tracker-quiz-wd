@@ -91,6 +91,7 @@ export default function FunnelChart({ data }: { data: ChartPoint[] }) {
             fill="url(#retFill)"
             dot={{ r: 3, fill: "#4f46e5", strokeWidth: 0 }}
             activeDot={{ r: 5 }}
+            isAnimationActive={false}
           />
           <Line
             yAxisId="right"
@@ -101,6 +102,7 @@ export default function FunnelChart({ data }: { data: ChartPoint[] }) {
             strokeDasharray="5 4"
             dot={false}
             activeDot={{ r: 4 }}
+            isAnimationActive={false}
           />
         </ComposedChart>
       </ResponsiveContainer>
