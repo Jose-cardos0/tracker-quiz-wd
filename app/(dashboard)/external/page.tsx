@@ -200,10 +200,18 @@ export default function ExternalQuizPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-brand-50 text-brand-700 text-[13px] p-3.5 leading-relaxed">
-            Depois de colar e publicar a página, acesse o quiz com{" "}
-            <code className="text-xs">?utm_source=facebook&amp;cid=...</code> e os
-            eventos vão aparecer aqui no dashboard.
+          <div className="rounded-xl bg-brand-50 text-brand-700 text-[13px] p-3.5 leading-relaxed space-y-2">
+            <p>
+              <b>Pronto.</b> Assim que alguém acessar a página, os eventos já
+              aparecem no dashboard.
+            </p>
+            <p>
+              💡 <b>Nos seus anúncios</b>, use o link com etiquetas pra saber a
+              origem de cada pessoa (senão aparece como “direto”):
+            </p>
+            <code className="block text-[11px] bg-white/70 rounded-lg p-2 break-all">
+              {url || "sua-url-do-quiz"}?utm_source=facebook&amp;utm_campaign=promo&amp;cid=anuncio1
+            </code>
           </div>
 
           <div className="flex items-center gap-3">
