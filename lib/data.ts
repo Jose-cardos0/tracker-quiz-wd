@@ -67,12 +67,47 @@ export type EventRow = {
   created_at: string;
 };
 
-/** Default window: last N days -> [from, to) ISO strings. */
+/** Rolling window: last N days -> [from, to) ISO strings. */
 export function windowFromRange(range: string): { from: string; to: string } {
   const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
   const to = new Date();
   const from = new Date(to.getTime() - days * 864e5);
   return { from: from.toISOString(), to: to.toISOString() };
+}
+
+/**
+ * Resolve the active window from URL params. Explicit from/to (used by
+ * "Hoje", "Ontem" and o intervalo personalizado) take priority; otherwise
+ * falls back to the rolling preset. `key` drives which tab is highlighted.
+ */
+export function resolveRange(sp: {
+  range?: string;
+  from?: string;
+  to?: string;
+}): { from: string; to: string; key: string } {
+  if (sp.from && sp.to) {
+    const f = new Date(sp.from);
+    const t = new Date(sp.to);
+    if (!isNaN(f.getTime()) && !isNaN(t.getTime())) {
+      return { from: f.toISOString(), to: t.toISOString(), key: sp.range || "custom" };
+    }
+  }
+  const key = sp.range || "30d";
+  return { ...windowFromRange(key), key };
+}
+
+/** Build the querystring that carries the current window across page links. */
+export function rangeQuery(sp: {
+  range?: string;
+  from?: string;
+  to?: string;
+}): string {
+  const q = new URLSearchParams();
+  if (sp.range) q.set("range", sp.range);
+  if (sp.from) q.set("from", sp.from);
+  if (sp.to) q.set("to", sp.to);
+  const s = q.toString();
+  return s ? `?${s}` : "";
 }
 
 export async function getProjects(): Promise<Project[]> {

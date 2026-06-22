@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProject, getSessions, windowFromRange } from "@/lib/data";
+import { getProject, getSessions, resolveRange, rangeQuery } from "@/lib/data";
 import { fmtDate, fmtDuration, flag } from "@/lib/format";
 import RangeTabs from "@/components/RangeTabs";
 
@@ -11,10 +11,10 @@ export default async function SessionsPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { range?: string };
+  searchParams: { range?: string; from?: string; to?: string };
 }) {
-  const range = searchParams.range || "30d";
-  const { from, to } = windowFromRange(range);
+  const { from, to, key: range } = resolveRange(searchParams);
+  const qs = rangeQuery(searchParams);
 
   const project = await getProject(params.id);
   if (!project) notFound();
@@ -27,7 +27,7 @@ export default async function SessionsPage({
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <Link
-            href={`/projects/${project.id}?range=${range}`}
+            href={`/projects/${project.id}${qs}`}
             className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-ink transition"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>

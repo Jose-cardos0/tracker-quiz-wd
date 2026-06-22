@@ -6,7 +6,8 @@ import {
   getFunnel,
   getTiming,
   getCampaigns,
-  windowFromRange,
+  resolveRange,
+  rangeQuery,
   liveUrl,
 } from "@/lib/data";
 import { fmtDuration, pct } from "@/lib/format";
@@ -39,10 +40,10 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { range?: string };
+  searchParams: { range?: string; from?: string; to?: string };
 }) {
-  const range = searchParams.range || "30d";
-  const { from, to } = windowFromRange(range);
+  const { from, to, key: range } = resolveRange(searchParams);
+  const qs = rangeQuery(searchParams);
 
   const project = await getProject(params.id);
   if (!project) notFound();
@@ -120,7 +121,7 @@ export default async function ProjectPage({
             <Pencil className="w-3.5 h-3.5" /> Editar
           </Link>
           <Link
-            href={`/projects/${project.id}/sessions?range=${range}`}
+            href={`/projects/${project.id}/sessions${qs}`}
             className="btn-primary text-sm h-9"
           >
             Ver sessões
