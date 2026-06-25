@@ -394,7 +394,7 @@ export async function getAnswerAssoc(
     v_a: r.v_a,
     q_b: r.q_b,
     v_b: r.v_b,
-    both: Number(r.both || 0),
+    both: Number(r.both_cnt || 0),
     a_total: Number(r.a_total || 0),
     b_total: Number(r.b_total || 0),
     confidence: Number(r.confidence || 0),
