@@ -85,6 +85,26 @@ export type AnswerQuestionRow = {
   sessions: number;
 };
 
+export type AnswerCompletionRow = {
+  question: string;
+  step_index: number | null;
+  value_label: string;
+  sessions: number;
+  completed: number;
+};
+
+export type NumericStatRow = {
+  question: string;
+  step_index: number | null;
+  n: number;
+  avg: number;
+  median: number;
+  p25: number;
+  p75: number;
+  min_val: number;
+  max_val: number;
+};
+
 /** Rolling window: last N days -> [from, to) ISO strings. */
 export function windowFromRange(range: string): { from: string; to: string } {
   const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
@@ -294,6 +314,52 @@ export async function getAnswerQuestions(
     step_index: r.step_index != null ? Number(r.step_index) : null,
     kind: r.kind ?? null,
     sessions: Number(r.sessions || 0),
+  }));
+}
+
+/** #1 Conclusão por resposta: entre quem escolheu cada valor, % que concluiu. */
+export async function getAnswerCompletion(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerCompletionRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_completion", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    value_label: r.value_label,
+    sessions: Number(r.sessions || 0),
+    completed: Number(r.completed || 0),
+  }));
+}
+
+/** #3 Perfil numérico: estatísticas das respostas numéricas do público. */
+export async function getNumericStats(
+  id: string,
+  from: string,
+  to: string
+): Promise<NumericStatRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_numeric_stats", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    n: Number(r.n || 0),
+    avg: Number(r.avg || 0),
+    median: Number(r.median || 0),
+    p25: Number(r.p25 || 0),
+    p75: Number(r.p75 || 0),
+    min_val: Number(r.min_val || 0),
+    max_val: Number(r.max_val || 0),
   }));
 }
 

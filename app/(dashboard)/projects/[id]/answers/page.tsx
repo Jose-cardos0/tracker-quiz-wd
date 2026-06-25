@@ -11,7 +11,7 @@ import {
 } from "@/lib/data";
 import { pct } from "@/lib/format";
 import RangeTabs from "@/components/RangeTabs";
-import { ListChecks, CheckCircle2, ListPlus, Type, Info } from "lucide-react";
+import { ListChecks, CheckCircle2, ListPlus, Type, Info, BarChart3 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +73,12 @@ export default async function AnswersPage({
           <p className="text-sm text-slate-500 mt-1">
             Quais respostas dominam cada pergunta e a taxa de resposta por etapa.
           </p>
+          <Link
+            href={`/projects/${project.id}/answers/detailed${qs}`}
+            className="btn-primary text-sm h-9 mt-3 inline-flex"
+          >
+            <BarChart3 className="w-4 h-4" /> Análises detalhadas
+          </Link>
         </div>
         <RangeTabs current={range} />
       </div>
