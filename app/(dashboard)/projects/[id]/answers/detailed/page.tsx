@@ -5,6 +5,7 @@ import {
   getOverview,
   getAnswerCompletion,
   getNumericStats,
+  getAnswerAssoc,
   resolveRange,
   rangeQuery,
   type AnswerCompletionRow,
@@ -18,12 +19,16 @@ import {
   TrendingDown,
   Ruler,
   ListChecks,
+  Share2,
+  ArrowRight,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 // abaixo disso, a taxa é ruído estatístico — sinalizamos mas não destacamos.
 const MIN_SUPPORT = 5;
+// suporte mínimo para um par de respostas valer como associação.
+const ASSOC_MIN_SUPPORT = 3;
 
 export default async function DetailedAnalysisPage({
   params,
@@ -38,10 +43,11 @@ export default async function DetailedAnalysisPage({
   const project = await getProject(params.id);
   if (!project) notFound();
 
-  const [ov, completion, numeric] = await Promise.all([
+  const [ov, completion, numeric, assoc] = await Promise.all([
     getOverview(project.id, from, to),
     getAnswerCompletion(project.id, from, to),
     getNumericStats(project.id, from, to),
+    getAnswerAssoc(project.id, from, to, ASSOC_MIN_SUPPORT),
   ]);
 
   const names = (project.step_names || {}) as Record<string, string>;
@@ -73,7 +79,8 @@ export default async function DetailedAnalysisPage({
     }))
     .sort((a, b) => (a.step_index ?? 1e9) - (b.step_index ?? 1e9));
 
-  const hasData = compQuestions.length > 0 || numeric.length > 0;
+  const hasData =
+    compQuestions.length > 0 || numeric.length > 0 || assoc.length > 0;
 
   return (
     <div>
@@ -245,6 +252,64 @@ export default async function DetailedAnalysisPage({
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {/* ===== #2 Associação entre respostas ===== */}
+          {assoc.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="grid place-items-center w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+                  <Share2 className="w-4 h-4" strokeWidth={2.2} />
+                </span>
+                <h2 className="font-bold text-ink">Associação entre respostas</h2>
+              </div>
+              <p className="text-[13px] text-slate-400 mb-4 ml-9">
+                Respostas que aparecem <b>juntas mais que o acaso</b> (lift &gt; 1).
+                Útil pra montar perfis e ângulos de copy.
+              </p>
+              <div className="space-y-2.5">
+                {assoc.map((p, i) => {
+                  const liftStr = p.lift.toFixed(1).replace(".", ",");
+                  const conf = Math.round(p.confidence * 100);
+                  const strong = p.lift >= 1.5;
+                  return (
+                    <div
+                      key={`${p.q_a}|${p.v_a}|${p.q_b}|${p.v_b}|${i}`}
+                      className="card card-pad"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <span className="inline-flex flex-col">
+                            <span className="text-[13px] font-bold text-ink leading-tight">{p.v_a}</span>
+                            <span className="text-[11px] text-slate-400 leading-tight">{p.q_a}</span>
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
+                          <span className="inline-flex flex-col">
+                            <span className="text-[13px] font-bold text-ink leading-tight">{p.v_b}</span>
+                            <span className="text-[11px] text-slate-400 leading-tight">{p.q_b}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span
+                            className={`text-[12px] font-extrabold tabular-nums rounded-full px-2 py-0.5 ${
+                              strong
+                                ? "bg-violet-100 text-violet-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {liftStr}×
+                          </span>
+                          <span className="text-[12px] text-slate-500 tabular-nums">
+                            {conf}% também marcam{" "}
+                            <span className="text-slate-300">(n={p.both})</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
