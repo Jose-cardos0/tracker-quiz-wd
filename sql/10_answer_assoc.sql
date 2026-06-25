@@ -20,7 +20,7 @@ returns table (
   v_a        text,
   q_b        text,
   v_b        text,
-  both       bigint,
+  both_cnt   bigint,
   a_total    bigint,
   b_total    bigint,
   confidence numeric,
@@ -55,7 +55,7 @@ language sql stable as $$
   pairs as (
     select x.question as q_a, x.value_label as v_a,
            y.question as q_b, y.value_label as v_b,
-           count(distinct x.session_id) as both
+           count(distinct x.session_id) as both_cnt
     from clean x
     join clean y
       on x.session_id = y.session_id
@@ -63,16 +63,16 @@ language sql stable as $$
     group by x.question, x.value_label, y.question, y.value_label
   )
   select p.q_a, p.v_a, p.q_b, p.v_b,
-         p.both,
+         p.both_cnt,
          ta.cnt as a_total,
          tb.cnt as b_total,
-         round(p.both::numeric / ta.cnt, 3)                       as confidence,
-         round((p.both::numeric * n.total) / (ta.cnt * tb.cnt), 2) as lift
+         round(p.both_cnt::numeric / ta.cnt, 3)                       as confidence,
+         round((p.both_cnt::numeric * n.total) / (ta.cnt * tb.cnt), 2) as lift
   from pairs p
   cross join n
   join totals ta on ta.question = p.q_a and ta.value_label = p.v_a
   join totals tb on tb.question = p.q_b and tb.value_label = p.v_b
-  where p.both >= p_min_support
-  order by lift desc, both desc
+  where p.both_cnt >= p_min_support
+  order by lift desc, both_cnt desc
   limit 80;
 $$;
