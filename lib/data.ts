@@ -105,6 +105,18 @@ export type NumericStatRow = {
   max_val: number;
 };
 
+export type AssocRow = {
+  q_a: string;
+  v_a: string;
+  q_b: string;
+  v_b: string;
+  both: number;
+  a_total: number;
+  b_total: number;
+  confidence: number; // P(B|A) 0..1
+  lift: number;
+};
+
 /** Rolling window: last N days -> [from, to) ISO strings. */
 export function windowFromRange(range: string): { from: string; to: string } {
   const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
@@ -360,6 +372,33 @@ export async function getNumericStats(
     p75: Number(r.p75 || 0),
     min_val: Number(r.min_val || 0),
     max_val: Number(r.max_val || 0),
+  }));
+}
+
+/** #2 Associação entre respostas: pares (A,B) com confiança e lift. */
+export async function getAnswerAssoc(
+  id: string,
+  from: string,
+  to: string,
+  minSupport = 3
+): Promise<AssocRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_assoc", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+    p_min_support: minSupport,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    q_a: r.q_a,
+    v_a: r.v_a,
+    q_b: r.q_b,
+    v_b: r.v_b,
+    both: Number(r.both || 0),
+    a_total: Number(r.a_total || 0),
+    b_total: Number(r.b_total || 0),
+    confidence: Number(r.confidence || 0),
+    lift: Number(r.lift || 0),
   }));
 }
 
