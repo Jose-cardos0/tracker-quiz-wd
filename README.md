@@ -59,6 +59,7 @@ sql/                      01_schema, 02_functions, 03_ingest  (rodar 1x)
    - `sql/02_functions.sql`
    - `sql/03_ingest.sql`
    - `sql/06_answers.sql`  (tabela de respostas deduplicadas — base do leadscore)
+   - `sql/07_answer_stats.sql`  (agregações de respostas p/ a tela Leadscore)
 3. Em **Authentication → Users**, crie seu usuário (e-mail + senha). É com ele
    que você entra no dashboard. (Desative "Enable email signups" se quiser
    travar o acesso só a usuários criados por você.)
