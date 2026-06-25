@@ -70,6 +70,21 @@ export type EventRow = {
   created_at: string;
 };
 
+export type AnswerStatRow = {
+  question: string;
+  step_index: number | null;
+  kind: string | null;
+  value_label: string;
+  responses: number;
+};
+
+export type AnswerQuestionRow = {
+  question: string;
+  step_index: number | null;
+  kind: string | null;
+  sessions: number;
+};
+
 /** Rolling window: last N days -> [from, to) ISO strings. */
 export function windowFromRange(range: string): { from: string; to: string } {
   const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
@@ -239,6 +254,47 @@ export async function getSession(sessionId: string): Promise<SessionRow | null> 
     .eq("session_id", sessionId)
     .maybeSingle();
   return (data as SessionRow) || null;
+}
+
+/** Per-question + per-value answer distribution (base do leadscore). */
+export async function getAnswerStats(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerStatRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_stats", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    kind: r.kind ?? null,
+    value_label: r.value_label,
+    responses: Number(r.responses || 0),
+  }));
+}
+
+/** Per-question summary: step, kind, distinct sessions that answered. */
+export async function getAnswerQuestions(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerQuestionRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_questions", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    kind: r.kind ?? null,
+    sessions: Number(r.sessions || 0),
+  }));
 }
 
 export async function getSessionEvents(sessionId: string): Promise<EventRow[]> {
