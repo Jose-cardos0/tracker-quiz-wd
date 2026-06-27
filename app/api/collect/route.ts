@@ -11,6 +11,13 @@ const projectCache = new Map<string, { id: string; total: number | null }>();
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Bots da Meta (revisão de anúncio / crawlers) e automação em geral. Mesmo
+// que o track.js os ignore no cliente, aqui é a rede de segurança no servidor:
+// descartamos o batch sem gravar nada. NÃO casa com o navegador in-app do
+// Facebook (FBAN/FBAV), que é usuário real.
+const BOT_RE =
+  /bot|crawl|spider|slurp|facebookexternalhit|meta-externalagent|facebookcatalog|bingpreview|headless|lighthouse|phantom|puppeteer|playwright|selenium|semrush|ahrefs|petalbot|baiduspider|yandex|whatsapp|telegram|skypeuripreview|google-inspectiontool/i;
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -34,6 +41,13 @@ export async function POST(req: NextRequest) {
   const { projectId, visitorId, sessionId, context, events } = body || {};
   if (!projectId || !visitorId || !sessionId || !Array.isArray(events)) {
     return NextResponse.json({ ok: false }, { status: 400, headers: corsHeaders() });
+  }
+
+  // Descarta tráfego de bot (revisão de anúncio da Meta, crawlers, headless)
+  // antes de qualquer escrita — assim não conta como sessão/visitante.
+  const ua = req.headers.get("user-agent") || (context && context.ua) || "";
+  if (BOT_RE.test(ua)) {
+    return new NextResponse(null, { status: 204, headers: corsHeaders() });
   }
 
   const admin = createAdminClient();

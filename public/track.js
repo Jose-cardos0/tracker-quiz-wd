@@ -67,6 +67,24 @@
       : "desktop";
   }
 
+  // ---- bot / automação ---------------------------------------------------
+  // Ao subir uma campanha, a Meta dispara revisão de anúncio + crawlers
+  // (facebookexternalhit, navegadores headless) que carregam a página,
+  // chegam na etapa 1 e saem — inflando as sessões com 0% de conclusão.
+  // NÃO confundir com o navegador in-app do Facebook (UA "FBAN/FBAV"), que
+  // é gente de verdade e não é filtrado aqui.
+  var BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|meta-externalagent|facebookcatalog|bingpreview|headless|lighthouse|phantom|puppeteer|playwright|selenium|semrush|ahrefs|petalbot|baiduspider|yandex|whatsapp|telegram|skypeuripreview|google-inspectiontool/i;
+  function isBot() {
+    try {
+      if (navigator.webdriver) return true; // automação (headless, ad-review)
+      var ua = navigator.userAgent || "";
+      if (!ua) return true; // sem user-agent = quase sempre bot
+      return BOT_RE.test(ua);
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ---- identity & attribution -------------------------------------------
   function initIdentity() {
     visitorId = lsGet(LS_VISITOR);
@@ -300,6 +318,7 @@
   var API = {
     init: function (options) {
       if (cfg) return; // idempotente
+      if (isBot()) return; // ignora bots (revisão de anúncio/crawlers da Meta etc.)
       cfg = {
         projectId: options.projectId,
         endpoint: options.endpoint || "/api/collect",
