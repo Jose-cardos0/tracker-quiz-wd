@@ -4,10 +4,17 @@
  * de campanha (UTM/ids de anúncio), passos do quiz, tempo por passo, cliques,
  * respostas e abandono. Envia em lote via fetch / sendBeacon.
  *
- *   HMTrack.init({ projectId, endpoint, totalSteps })
- *   HMTrack.step(index, name)        // ao entrar em cada etapa
- *   HMTrack.answer(question, value)  // resposta escolhida
- *   HMTrack.event(type, meta)        // evento custom (ex: checkout)
+ *   HMTrack.init({ projectId, endpoint, totalSteps, autoAnswers })
+ *   HMTrack.step(index, name)              // ao entrar em cada etapa
+ *   HMTrack.answer(question, value, kind)  // resposta escolhida
+ *   HMTrack.event(type, meta)              // evento custom (ex: checkout)
+ *
+ * autoAnswers (opcional): captura respostas sozinho a partir do markup:
+ *   - única:   <button data-val="...">
+ *   - múltipla: <... data-multi> com filhos data-val (manda o conjunto atual)
+ *   - texto:   <input data-answer="pergunta">
+ *   Quizzes que já chamam HMTrack.answer() manualmente NÃO devem ligar isto
+ *   (evita captura em dobro). Etapas de foto/vídeo são ignoradas.
  * ===========================================================================*/
 (function () {
   "use strict";
@@ -237,6 +244,66 @@
       step_index: curStep ? curStep.index : null,
       meta: t,
     });
+    if (cfg.autoAnswers) autoAnswerFromClick(e.target);
+  }
+
+  // ---- auto answer capture (opt-in: autoAnswers) -------------------------
+  // Convenção (abordagem "a"):
+  //   - resposta única:   <button data-val="...">           -> value = data-val
+  //   - múltipla escolha: <div data-multi> ... data-val ... -> value = [selecionados]
+  //   - texto livre:      <input data-answer="pergunta">    -> value = field.value
+  // Etapas sem esses marcadores (foto/vídeo + "Próximo") são ignoradas.
+  function answerQuestion(el) {
+    // nome da pergunta: data-question explícito > nome da etapa atual > "Etapa N"
+    var marked = el.closest ? el.closest("[data-question]") : null;
+    if (marked && marked.getAttribute("data-question"))
+      return marked.getAttribute("data-question").slice(0, 120);
+    if (curStep && curStep.name) return curStep.name;
+    if (curStep) return "Etapa " + curStep.index;
+    return null;
+  }
+  function isSelected(n) {
+    if (!n) return false;
+    if (
+      n.classList &&
+      (n.classList.contains("sel") ||
+        n.classList.contains("selected") ||
+        n.classList.contains("active") ||
+        n.classList.contains("checked"))
+    )
+      return true;
+    if (n.getAttribute && n.getAttribute("aria-checked") === "true") return true;
+    var inp = n.querySelector && n.querySelector("input:checked");
+    return !!inp;
+  }
+  function autoAnswerFromClick(target) {
+    if (!target || !target.closest) return;
+    var opt = target.closest("[data-val]");
+    if (!opt) return; // não é uma opção de resposta -> ignora (nav/foto/vídeo)
+    var q = answerQuestion(opt);
+    if (!q) return;
+    var multi = opt.closest("[data-multi]");
+    // adia para depois do handler do quiz (que aplica a classe de selecionado)
+    setTimeout(function () {
+      if (multi) {
+        var vals = Array.prototype.slice
+          .call(multi.querySelectorAll("[data-val]"))
+          .filter(isSelected)
+          .map(function (n) {
+            return n.getAttribute("data-val");
+          });
+        API.answer(q, vals, "multi");
+      } else {
+        API.answer(q, opt.getAttribute("data-val"), "single");
+      }
+    }, 0);
+  }
+  function onAutoChange(e) {
+    var f = e.target;
+    if (!f || !f.matches || !f.matches("[data-answer]")) return;
+    var q = f.getAttribute("data-answer");
+    if (!q) q = answerQuestion(f);
+    if (q) API.answer(q, f.value, "text");
   }
 
   // ---- auto step detection ----------------------------------------------
@@ -324,6 +391,7 @@
         endpoint: options.endpoint || "/api/collect",
         totalSteps: options.totalSteps || null,
         autoSteps: !!options.autoSteps,
+        autoAnswers: !!options.autoAnswers,
         stepSelector:
           options.stepSelector || "[data-step], .step, section[data-step]",
       };
@@ -331,6 +399,10 @@
       push("session_start", {});
 
       document.addEventListener("click", onClick, true);
+      if (cfg.autoAnswers) {
+        // texto livre: captura no change/blur de inputs marcados com data-answer
+        document.addEventListener("change", onAutoChange, true);
+      }
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") onHide();
       });
@@ -348,8 +420,11 @@
       openStep(index, name);
     },
 
-    answer: function (question, value) {
-      push("answer", { meta: { question: question, value: value } });
+    answer: function (question, value, kind) {
+      push("answer", {
+        step_index: curStep ? curStep.index : null,
+        meta: { question: question, value: value, kind: kind || null },
+      });
     },
 
     event: function (type, meta) {

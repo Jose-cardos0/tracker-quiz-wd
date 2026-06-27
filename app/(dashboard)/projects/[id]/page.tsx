@@ -30,6 +30,7 @@ import {
   Megaphone,
   ArrowUpRight,
   Pencil,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 
@@ -122,9 +123,15 @@ export default async function ProjectPage({
           </Link>
           <Link
             href={`/projects/${project.id}/sessions${qs}`}
-            className="btn-primary text-sm h-9"
+            className="btn-ghost text-sm"
           >
             Ver sessões
+          </Link>
+          <Link
+            href={`/projects/${project.id}/answers${qs}`}
+            className="btn-primary text-sm h-9"
+          >
+            <ListChecks className="w-4 h-4" /> Leadscore
           </Link>
         </div>
       </div>

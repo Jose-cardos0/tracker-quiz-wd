@@ -104,6 +104,11 @@ export async function POST(req: NextRequest) {
   let completed = false;
   let startedAt: string | null = null;
 
+  // Respostas: deduplica por pergunta dentro do lote (último ts vence). O upsert
+  // no banco resolve a dedup entre lotes/visitas. Os eventos crus continuam
+  // sendo gravados em `events` (histórico).
+  const answerMap = new Map<string, any>();
+
   const rows = events.map((e: any) => {
     if (
       (e.type === "step_view" || e.type === "reached_last") &&
@@ -117,6 +122,27 @@ export async function POST(req: NextRequest) {
     if (e.type === "quiz_complete") completed = true;
     if (e.type === "session_start") {
       startedAt = e.ts ? new Date(e.ts).toISOString() : null;
+    }
+    if (
+      e.type === "answer" &&
+      e.meta &&
+      e.meta.question != null &&
+      String(e.meta.question).trim() !== ""
+    ) {
+      const q = String(e.meta.question).slice(0, 120);
+      const answeredAt = e.ts
+        ? new Date(e.ts).toISOString()
+        : new Date().toISOString();
+      const prev = answerMap.get(q);
+      if (!prev || answeredAt >= prev.answered_at) {
+        answerMap.set(q, {
+          question: q,
+          value: e.meta.value ?? null,
+          step_index: typeof e.step_index === "number" ? e.step_index : null,
+          kind: e.meta.kind != null ? String(e.meta.kind).slice(0, 20) : null,
+          answered_at: answeredAt,
+        });
+      }
     }
     return {
       project_id: proj!.id,
@@ -153,6 +179,17 @@ export async function POST(req: NextRequest) {
   });
   if (rpcErr) {
     console.error("apply_ingest error", rpcErr.message);
+  }
+
+  // --- upsert answers (deduplicated "current answer" per question) --------
+  if (answerMap.size) {
+    const { error: ansErr } = await admin.rpc("apply_answers", {
+      p_session: sessionId,
+      p_project: proj.id,
+      p_visitor: visitorId,
+      p_answers: Array.from(answerMap.values()),
+    });
+    if (ansErr) console.error("apply_answers error", ansErr.message);
   }
 
   // --- insert events ------------------------------------------------------

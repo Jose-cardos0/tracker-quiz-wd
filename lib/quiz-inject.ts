@@ -32,17 +32,24 @@ export type InjectOpts = {
   endpoint: string;
   totalSteps: number | null;
   autoSteps: boolean;
+  autoAnswers?: boolean;
 };
 
 /** Insert the HMTrack snippet into <head> (idempotent). */
 export function injectTracker(html: string, opts: InjectOpts): string {
   if (html.includes("HMTrack.init(")) return html; // already instrumented
 
+  // Uploads não costumam instrumentar respostas na mão -> liga a auto-captura
+  // por padrão (data-val / data-multi / data-answer). Ver public/track.js.
+  const autoAnswers = opts.autoAnswers !== false;
+
   const init = `HMTrack.init({ projectId: ${JSON.stringify(
     opts.slug
   )}, endpoint: ${JSON.stringify(opts.endpoint)}, totalSteps: ${
     opts.totalSteps ?? "null"
-  }, autoSteps: ${opts.autoSteps ? "true" : "false"} });`;
+  }, autoSteps: ${opts.autoSteps ? "true" : "false"}, autoAnswers: ${
+    autoAnswers ? "true" : "false"
+  } });`;
 
   const snippet = `\n<!-- HMTrack (injetado automaticamente) -->\n<script src="/track.js"></script>\n<script>${init}</script>\n`;
 

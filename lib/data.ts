@@ -70,6 +70,53 @@ export type EventRow = {
   created_at: string;
 };
 
+export type AnswerStatRow = {
+  question: string;
+  step_index: number | null;
+  kind: string | null;
+  value_label: string;
+  responses: number;
+};
+
+export type AnswerQuestionRow = {
+  question: string;
+  step_index: number | null;
+  kind: string | null;
+  sessions: number;
+};
+
+export type AnswerCompletionRow = {
+  question: string;
+  step_index: number | null;
+  value_label: string;
+  sessions: number;
+  completed: number;
+};
+
+export type NumericStatRow = {
+  question: string;
+  step_index: number | null;
+  n: number;
+  avg: number;
+  median: number;
+  p25: number;
+  p75: number;
+  min_val: number;
+  max_val: number;
+};
+
+export type AssocRow = {
+  q_a: string;
+  v_a: string;
+  q_b: string;
+  v_b: string;
+  both: number;
+  a_total: number;
+  b_total: number;
+  confidence: number; // P(B|A) 0..1
+  lift: number;
+};
+
 /** Rolling window: last N days -> [from, to) ISO strings. */
 export function windowFromRange(range: string): { from: string; to: string } {
   const days = range === "7d" ? 7 : range === "90d" ? 90 : range === "all" ? 3650 : 30;
@@ -239,6 +286,120 @@ export async function getSession(sessionId: string): Promise<SessionRow | null> 
     .eq("session_id", sessionId)
     .maybeSingle();
   return (data as SessionRow) || null;
+}
+
+/** Per-question + per-value answer distribution (base do leadscore). */
+export async function getAnswerStats(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerStatRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_stats", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    kind: r.kind ?? null,
+    value_label: r.value_label,
+    responses: Number(r.responses || 0),
+  }));
+}
+
+/** Per-question summary: step, kind, distinct sessions that answered. */
+export async function getAnswerQuestions(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerQuestionRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_questions", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    kind: r.kind ?? null,
+    sessions: Number(r.sessions || 0),
+  }));
+}
+
+/** #1 Conclusão por resposta: entre quem escolheu cada valor, % que concluiu. */
+export async function getAnswerCompletion(
+  id: string,
+  from: string,
+  to: string
+): Promise<AnswerCompletionRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_completion", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    value_label: r.value_label,
+    sessions: Number(r.sessions || 0),
+    completed: Number(r.completed || 0),
+  }));
+}
+
+/** #3 Perfil numérico: estatísticas das respostas numéricas do público. */
+export async function getNumericStats(
+  id: string,
+  from: string,
+  to: string
+): Promise<NumericStatRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_numeric_stats", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    question: r.question,
+    step_index: r.step_index != null ? Number(r.step_index) : null,
+    n: Number(r.n || 0),
+    avg: Number(r.avg || 0),
+    median: Number(r.median || 0),
+    p25: Number(r.p25 || 0),
+    p75: Number(r.p75 || 0),
+    min_val: Number(r.min_val || 0),
+    max_val: Number(r.max_val || 0),
+  }));
+}
+
+/** #2 Associação entre respostas: pares (A,B) com confiança e lift. */
+export async function getAnswerAssoc(
+  id: string,
+  from: string,
+  to: string,
+  minSupport = 3
+): Promise<AssocRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.rpc("project_answer_assoc", {
+    p_id: id,
+    p_from: from,
+    p_to: to,
+    p_min_support: minSupport,
+  });
+  return ((data as any[]) || []).map((r) => ({
+    q_a: r.q_a,
+    v_a: r.v_a,
+    q_b: r.q_b,
+    v_b: r.v_b,
+    both: Number(r.both_cnt || 0),
+    a_total: Number(r.a_total || 0),
+    b_total: Number(r.b_total || 0),
+    confidence: Number(r.confidence || 0),
+    lift: Number(r.lift || 0),
+  }));
 }
 
 export async function getSessionEvents(sessionId: string): Promise<EventRow[]> {
