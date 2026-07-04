@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { Calendar } from "lucide-react";
 
 const PRESETS = [
   { key: "today", label: "Hoje" },
@@ -12,7 +13,6 @@ const PRESETS = [
   { key: "all", label: "Tudo" },
 ];
 
-/** Local day boundaries -> [start, nextDayStart) ISO. */
 function dayBounds(d: Date) {
   const s = new Date(d);
   s.setHours(0, 0, 0, 0);
@@ -25,6 +25,7 @@ export default function RangeTabs({ current }: { current: string }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
@@ -35,6 +36,7 @@ export default function RangeTabs({ current }: { current: string }) {
   }
 
   function preset(key: string) {
+    setOpen(false);
     go((sp) => {
       sp.set("range", key);
       if (key === "today") {
@@ -58,7 +60,8 @@ export default function RangeTabs({ current }: { current: string }) {
     if (!from || !to) return;
     const s = new Date(from + "T00:00:00");
     const e = new Date(to + "T00:00:00");
-    e.setDate(e.getDate() + 1); // make `to` inclusive
+    e.setDate(e.getDate() + 1);
+    setOpen(false);
     go((sp) => {
       sp.set("range", "custom");
       sp.set("from", s.toISOString());
@@ -66,8 +69,10 @@ export default function RangeTabs({ current }: { current: string }) {
     });
   }
 
+  const isCustom = current === "custom";
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       <div className="inline-flex bg-slate-100 rounded-xl p-1 gap-1">
         {PRESETS.map((r) => (
           <button
@@ -84,40 +89,60 @@ export default function RangeTabs({ current }: { current: string }) {
         ))}
       </div>
 
-      <div className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-xl pl-3 pr-1.5 py-1">
-        <input
-          type="date"
-          value={from}
-          max={to || undefined}
-          onChange={(e) => setFrom(e.target.value)}
-          className="text-sm text-slate-600 outline-none bg-transparent"
-        />
-        <span className="text-slate-300">→</span>
-        <input
-          type="date"
-          value={to}
-          min={from || undefined}
-          onChange={(e) => setTo(e.target.value)}
-          className="text-sm text-slate-600 outline-none bg-transparent"
-        />
+      {/* seletor de período (dropdown) */}
+      <div className="relative">
         <button
-          onClick={applyCustom}
-          disabled={!from || !to}
-          className={`text-sm font-semibold px-2.5 py-1.5 rounded-lg transition ${
-            from && to
-              ? "bg-ink text-white hover:bg-slate-700"
-              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          onClick={() => setOpen((o) => !o)}
+          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+            isCustom
+              ? "border-brand-300 bg-brand-50 text-brand-700"
+              : "border-slate-200 bg-white text-slate-600 hover:text-ink"
           }`}
         >
-          Aplicar
+          <Calendar className="w-4 h-4" />
+          {isCustom ? "Personalizado ✓" : "Período"}
         </button>
-      </div>
 
-      {current === "custom" && (
-        <span className="text-xs font-semibold text-brand-600 bg-brand-50 rounded-full px-2.5 py-1">
-          intervalo personalizado
-        </span>
-      )}
+        {open && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+            <div className="absolute right-0 mt-2 z-20 w-72 card p-4 shadow-cardhover">
+              <div className="text-xs font-semibold text-slate-500 mb-2">
+                Intervalo personalizado
+              </div>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1">De</label>
+                  <input
+                    type="date"
+                    value={from}
+                    max={to || undefined}
+                    onChange={(e) => setFrom(e.target.value)}
+                    className="input py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1">Até</label>
+                  <input
+                    type="date"
+                    value={to}
+                    min={from || undefined}
+                    onChange={(e) => setTo(e.target.value)}
+                    className="input py-2 text-sm"
+                  />
+                </div>
+                <button
+                  onClick={applyCustom}
+                  disabled={!from || !to}
+                  className="btn-brand w-full py-2 text-sm disabled:opacity-40"
+                >
+                  Aplicar
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

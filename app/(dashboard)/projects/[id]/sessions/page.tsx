@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProject, getSessions, resolveRange, rangeQuery } from "@/lib/data";
-import { fmtDate, fmtDuration } from "@/lib/format";
 import RangeTabs from "@/components/RangeTabs";
-import CountryFlag from "@/components/CountryFlag";
+import SessionsView from "@/components/SessionsView";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +19,7 @@ export default async function SessionsPage({
   const project = await getProject(params.id);
   if (!project) notFound();
 
-  const sessions = await getSessions(project.id, from, to, 200);
-  const total = project.total_steps || 0;
+  const sessions = await getSessions(project.id, from, to, 1000);
 
   return (
     <div>
@@ -38,97 +36,18 @@ export default async function SessionsPage({
             Sessões
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Últimas {sessions.length} sessões no período.
+            {sessions.length.toLocaleString("pt-BR")} sessões no período
+            {sessions.length >= 1000 ? " (máx. exibido)" : ""}.
           </p>
         </div>
         <RangeTabs current={range} />
       </div>
 
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] text-slate-400 uppercase tracking-wide bg-slate-50/80 border-b border-slate-100">
-                <th className="py-3 px-4 font-semibold">Início</th>
-                <th className="py-3 px-4 font-semibold">Origem</th>
-                <th className="py-3 px-4 font-semibold">Local</th>
-                <th className="py-3 px-4 font-semibold">Progresso</th>
-                <th className="py-3 px-4 font-semibold text-right">Tempo</th>
-                <th className="py-3 px-4 font-semibold text-center">Status</th>
-                <th className="py-3 px-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => {
-                const prog = total ? Math.round((s.max_step / total) * 100) : 0;
-                const src =
-                  (s.utm && (s.utm.utm_source || s.utm.utm_campaign)) ||
-                  (s.cid ? `cid:${s.cid}` : null) ||
-                  "(direto)";
-                return (
-                  <tr
-                    key={s.session_id}
-                    className="border-t border-slate-100 hover:bg-slate-50/60 transition"
-                  >
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                      {fmtDate(s.started_at)}
-                    </td>
-                    <td className="py-3 px-4 max-w-[180px] truncate text-slate-700" title={src}>
-                      {src}
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-2">
-                        <CountryFlag code={s.country} />
-                        <span className="text-slate-400 text-xs">{s.device}</span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 w-44">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[70px]">
-                          <div
-                            className={`h-full rounded-full ${
-                              s.completed ? "bg-emerald-500" : "bg-brand-500"
-                            }`}
-                            style={{ width: `${Math.max(prog, 4)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-slate-500 tabular-nums">
-                          {s.max_step}/{total || "?"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-right tabular-nums text-slate-600">
-                      {fmtDuration(s.duration_ms)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {s.completed ? (
-                        <span className="pill-green">Concluiu</span>
-                      ) : (
-                        <span className="pill-slate">Abandonou</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <Link
-                        href={`/projects/${project.id}/sessions/${s.session_id}`}
-                        className="text-sm font-semibold text-brand-600 hover:text-brand-700"
-                      >
-                        Detalhe
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-              {sessions.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
-                    Nenhuma sessão no período.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SessionsView
+        sessions={sessions}
+        projectId={project.id}
+        totalSteps={project.total_steps || 0}
+      />
     </div>
   );
 }
