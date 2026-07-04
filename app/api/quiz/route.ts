@@ -88,16 +88,48 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Evita colisão de slug: se o slug já existe para OUTRO quiz, gera um
+    // slug único (quiz-2, quiz-3...) em vez de sobrescrever e misturar dados.
+    let finalSlug = slug;
+    const { data: existing } = await admin
+      .from("projects")
+      .select("id,hosting,external_url,storage_path")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (existing) {
+      const sameExternal =
+        external &&
+        existing.hosting === "external" &&
+        existing.external_url === externalUrl;
+      const sameUpload = !external && existing.hosting === "storage";
+      if (!sameExternal && !sameUpload) {
+        let n = 1;
+        while (true) {
+          n++;
+          const cand = `${slug}-${n}`;
+          const { data: taken } = await admin
+            .from("projects")
+            .select("id")
+            .eq("slug", cand)
+            .maybeSingle();
+          if (!taken) {
+            finalSlug = cand;
+            break;
+          }
+        }
+      }
+    }
+
     const { data, error } = await admin
       .from("projects")
       .upsert(
         {
-          slug,
-          name: String(body.name || slug),
+          slug: finalSlug,
+          name: String(body.name || finalSlug),
           type: body.type === "page" ? "page" : "quiz",
           total_steps: total,
           hosting: external ? "external" : "storage",
-          storage_path: external ? null : slug,
+          storage_path: external ? null : finalSlug,
           external_url: externalUrl,
           updated_at: new Date().toISOString(),
         },
@@ -107,7 +139,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true, projectId: data?.id });
+    return NextResponse.json({ ok: true, projectId: data?.id, slug: finalSlug });
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

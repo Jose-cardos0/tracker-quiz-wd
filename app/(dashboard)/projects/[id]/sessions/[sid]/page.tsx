@@ -6,7 +6,8 @@ import {
   getSessionEvents,
   type EventRow,
 } from "@/lib/data";
-import { fmtDate, fmtDuration, flag } from "@/lib/format";
+import { fmtDate, fmtDuration } from "@/lib/format";
+import CountryFlag from "@/components/CountryFlag";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,11 @@ export default async function SessionDetailPage({
         <Meta label="Início" value={fmtDate(session.started_at)} />
         <Meta
           label="Local / dispositivo"
-          value={`${flag(session.country)} ${session.country || "?"} · ${session.device || "?"}`}
+          value={
+            <span className="inline-flex items-center gap-2">
+              <CountryFlag code={session.country} /> · {session.device || "?"}
+            </span>
+          }
         />
         <Meta
           label="Progresso"
@@ -164,7 +169,7 @@ function Meta({
   wide,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   wide?: boolean;
 }) {
   return (

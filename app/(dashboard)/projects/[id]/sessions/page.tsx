@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProject, getSessions, resolveRange, rangeQuery } from "@/lib/data";
-import { fmtDate, fmtDuration, flag } from "@/lib/format";
+import { fmtDate, fmtDuration } from "@/lib/format";
 import RangeTabs from "@/components/RangeTabs";
+import CountryFlag from "@/components/CountryFlag";
 
 export const dynamic = "force-dynamic";
 
@@ -76,8 +77,10 @@ export default async function SessionsPage({
                       {src}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      {flag(s.country)}{" "}
-                      <span className="text-slate-400 text-xs">{s.device}</span>
+                      <span className="inline-flex items-center gap-2">
+                        <CountryFlag code={s.country} />
+                        <span className="text-slate-400 text-xs">{s.device}</span>
+                      </span>
                     </td>
                     <td className="py-3 px-4 w-44">
                       <div className="flex items-center gap-2">

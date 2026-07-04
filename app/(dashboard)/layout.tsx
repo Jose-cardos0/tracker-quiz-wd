@@ -1,3 +1,4 @@
+import "flag-icons/css/flag-icons.min.css";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Header from "@/components/Header";

@@ -78,10 +78,13 @@ export default function ExternalQuizPage() {
       const app = (
         process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       ).replace(/\/$/, "");
+      // usa o slug FINAL que o servidor retornou (pode ter sido ajustado
+      // pra evitar colisão com outro quiz)
+      const usedSlug = data.slug || finalSlug;
       const snippet =
         `<script src="${app}/track.js"></script>\n` +
         `<script>\n` +
-        `  HMTrack.init({ projectId: "${finalSlug}", endpoint: "${app}/api/collect", totalSteps: ${
+        `  HMTrack.init({ projectId: "${usedSlug}", endpoint: "${app}/api/collect", totalSteps: ${
           total ?? "null"
         }, autoSteps: true });\n` +
         `</script>`;
