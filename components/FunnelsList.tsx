@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Search, ChevronLeft, ChevronRight, Columns2 } from "lucide-react";
 import { pct } from "@/lib/format";
 
 type Item = {
@@ -194,14 +194,23 @@ function Card({
         </div>
       </Link>
 
-      <button
-        onClick={onDelete}
-        disabled={deleting}
-        title="Excluir funil"
-        className="absolute top-4 right-4 grid place-items-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm transition opacity-0 group-hover:opacity-100 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 disabled:opacity-100"
-      >
-        <Trash2 className={`w-4 h-4 ${deleting ? "animate-pulse" : ""}`} />
-      </button>
+      <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Link
+          href={`/compare?ids=${p.id}`}
+          title="Comparar com outros funis"
+          className="grid place-items-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm transition hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50"
+        >
+          <Columns2 className="w-4 h-4" />
+        </Link>
+        <button
+          onClick={onDelete}
+          disabled={deleting}
+          title="Excluir funil"
+          className="grid place-items-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm transition hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 disabled:opacity-100"
+        >
+          <Trash2 className={`w-4 h-4 ${deleting ? "animate-pulse" : ""}`} />
+        </button>
+      </div>
     </div>
   );
 }
