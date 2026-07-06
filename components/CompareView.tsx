@@ -144,18 +144,18 @@ export default function CompareView({
           <button
             onClick={() => scroll(-1)}
             aria-label="Rolar para a esquerda"
-            className="hidden sm:grid place-items-center absolute -left-3 top-24 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-ink"
+            className="hidden sm:grid place-items-center absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-orange-200 shadow-lg text-orange-500 hover:bg-orange-50 hover:text-orange-600 transition"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" strokeWidth={2.6} />
           </button>
         )}
         {arrows.right && (
           <button
             onClick={() => scroll(1)}
             aria-label="Rolar para a direita"
-            className="hidden sm:grid place-items-center absolute -right-3 top-24 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-ink"
+            className="hidden sm:grid place-items-center absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-orange-200 shadow-lg text-orange-500 hover:bg-orange-50 hover:text-orange-600 transition"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5" strokeWidth={2.6} />
           </button>
         )}
         <div ref={scrollRef} onScroll={updateArrows} className="flex gap-4 overflow-x-auto pb-3 scroll-smooth">
