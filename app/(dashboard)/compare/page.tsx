@@ -7,6 +7,7 @@ import {
   getTiming,
   getCampaigns,
   resolveRange,
+  liveUrl,
 } from "@/lib/data";
 import RangeTabs from "@/components/RangeTabs";
 import CompareView from "@/components/CompareView";
@@ -42,6 +43,7 @@ export default async function ComparePage({
             id: project.id,
             name: project.name,
             slug: project.slug,
+            url: liveUrl(project),
             total_steps: project.total_steps,
             step_names: project.step_names,
           },

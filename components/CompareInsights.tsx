@@ -15,12 +15,12 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { Trophy, Clock, TrendingDown } from "lucide-react";
+import { Trophy, Clock, TrendingDown, ArrowUpRight } from "lucide-react";
 import { fmtDuration } from "@/lib/format";
 import type { Overview, FunnelRow, TimingRow } from "@/lib/data";
 
 type Col = {
-  project: { id: string; name: string; total_steps: number | null };
+  project: { id: string; name: string; url: string; total_steps: number | null };
   ov: Overview;
   funnel: FunnelRow[];
   timing: TimingRow[];
@@ -29,11 +29,15 @@ type Col = {
 export default function CompareInsights({
   cols,
   colorOf,
+  show = "all",
 }: {
   cols: Col[];
   colorOf: (i: number) => string;
+  show?: "all" | "verdict" | "charts";
 }) {
   if (cols.length < 2) return null;
+  const showVerdict = show !== "charts";
+  const showCharts = show !== "verdict";
 
   // rótulo único por funil (desambigua nomes iguais)
   const label = (c: Col, i: number) => {
@@ -47,6 +51,7 @@ export default function CompareInsights({
       i,
       id: c.project.id,
       label: label(c, i),
+      url: c.project.url,
       color: colorOf(i),
       sessions: c.ov.sessions,
       completion: rate,
@@ -85,49 +90,58 @@ export default function CompareInsights({
   const pieData = metrics.map((m) => ({ name: m.label, value: m.sessions }));
 
   return (
-    <div className="mb-6">
-      {/* veredito */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-4">
-        <Verdict
-          icon={<Trophy className="w-5 h-5" />}
-          grad="from-amber-400 to-amber-600"
-          title="Mais converteu"
-          name={bestConv?.label || "—"}
-          detail={bestConv ? `${Math.round(bestConv.completion * 100)}% chegam ao fim` : "sem dados"}
-        />
-        <Verdict
-          icon={<Clock className="w-5 h-5" />}
-          grad="from-indigo-400 to-violet-600"
-          title="Mais prendeu atenção"
-          name={bestTime?.label || "—"}
-          detail={bestTime ? `${fmtDuration(bestTime.avgMs)} em média` : "sem dados"}
-        />
-        <Verdict
-          icon={<TrendingDown className="w-5 h-5" />}
-          grad="from-rose-400 to-rose-600"
-          title="Mais abandono"
-          name={worstConv?.label || "—"}
-          detail={worstConv ? `${Math.round((1 - worstConv.completion) * 100)}% abandonam` : "sem dados"}
-        />
-      </div>
+    <div className={showCharts && !showVerdict ? "mt-6" : "mb-6"}>
+      {showVerdict && (
+        <>
+          {/* veredito */}
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+            <Verdict
+              icon={<Trophy className="w-5 h-5" />}
+              grad="from-amber-400 to-amber-600"
+              title="Mais converteu"
+              name={bestConv?.label || "—"}
+              url={bestConv?.url}
+              detail={bestConv ? `${Math.round(bestConv.completion * 100)}% chegam ao fim` : "sem dados"}
+            />
+            <Verdict
+              icon={<Clock className="w-5 h-5" />}
+              grad="from-indigo-400 to-violet-600"
+              title="Mais prendeu atenção"
+              name={bestTime?.label || "—"}
+              url={bestTime?.url}
+              detail={bestTime ? `${fmtDuration(bestTime.avgMs)} em média` : "sem dados"}
+            />
+            <Verdict
+              icon={<TrendingDown className="w-5 h-5" />}
+              grad="from-rose-400 to-rose-600"
+              title="Mais abandono"
+              name={worstConv?.label || "—"}
+              url={worstConv?.url}
+              detail={worstConv ? `${Math.round((1 - worstConv.completion) * 100)}% abandonam` : "sem dados"}
+            />
+          </div>
 
-      {/* frase do analista */}
-      {bestConv && worstConv && bestConv.id !== worstConv.id && (
-        <div className="card card-pad mb-4 text-[13.5px] text-slate-700 leading-relaxed">
-          🏆 <b>{bestConv.label}</b> é o que mais converte (
-          <b className="text-emerald-600">{Math.round(bestConv.completion * 100)}%</b> até o fim)
-          {bestTime && bestTime.avgMs > 0 && (
-            <>
-              , enquanto <b>{bestTime.label}</b> é o que mais prende atenção (
-              {fmtDuration(bestTime.avgMs)} por sessão)
-            </>
+          {/* frase do analista */}
+          {bestConv && worstConv && bestConv.id !== worstConv.id && (
+            <div className="card card-pad mb-4 text-[13.5px] text-slate-700 leading-relaxed">
+              🏆 <b>{bestConv.label}</b> é o que mais converte (
+              <b className="text-emerald-600">{Math.round(bestConv.completion * 100)}%</b> até o fim)
+              {bestTime && bestTime.avgMs > 0 && (
+                <>
+                  , enquanto <b>{bestTime.label}</b> é o que mais prende atenção (
+                  {fmtDuration(bestTime.avgMs)} por sessão)
+                </>
+              )}
+              . Já <b>{worstConv.label}</b> tem o maior abandono (
+              <b className="text-rose-600">{Math.round((1 - worstConv.completion) * 100)}%</b> saem antes do fim) — vale
+              revisar as primeiras etapas dele.
+            </div>
           )}
-          . Já <b>{worstConv.label}</b> tem o maior abandono (
-          <b className="text-rose-600">{Math.round((1 - worstConv.completion) * 100)}%</b> saem antes do fim) — vale
-          revisar as primeiras etapas dele.
-        </div>
+        </>
       )}
 
+      {showCharts && (
+       <>
       {/* linha: retenção por etapa */}
       <div className="card card-pad mb-4">
         <h3 className="font-bold text-ink mb-1">Retenção por etapa</h3>
@@ -207,6 +221,8 @@ export default function CompareInsights({
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -216,12 +232,14 @@ function Verdict({
   grad,
   title,
   name,
+  url,
   detail,
 }: {
   icon: React.ReactNode;
   grad: string;
   title: string;
   name: string;
+  url?: string;
   detail: string;
 }) {
   return (
@@ -232,6 +250,17 @@ function Verdict({
       <div className="min-w-0">
         <div className="stat-label">{title}</div>
         <div className="font-black text-ink truncate">{name}</div>
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-brand-600 hover:underline inline-flex items-center gap-0.5 max-w-full"
+          >
+            <span className="truncate">{url}</span>
+            <ArrowUpRight className="w-3 h-3 shrink-0" />
+          </a>
+        )}
         <div className="text-xs text-slate-400 truncate">{detail}</div>
       </div>
     </div>

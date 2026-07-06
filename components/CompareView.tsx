@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, ArrowUpRight } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
 import type { Overview, FunnelRow, TimingRow, CampaignRow } from "@/lib/data";
 import CompareInsights from "@/components/CompareInsights";
@@ -15,6 +15,7 @@ type Col = {
     id: string;
     name: string;
     slug: string;
+    url: string;
     total_steps: number | null;
     step_names: Record<string, string> | null;
   };
@@ -115,7 +116,7 @@ export default function CompareView({
         )}
       </div>
 
-      <CompareInsights cols={cols} colorOf={colorOf} />
+      <CompareInsights cols={cols} colorOf={colorOf} show="verdict" />
 
       <div className="flex gap-4 overflow-x-auto pb-3">
         {cols.map((col, ci) => (
@@ -130,7 +131,16 @@ export default function CompareView({
                       {col.project.name}
                     </Link>
                   </div>
-                  <div className="text-xs text-slate-400 font-mono truncate mt-0.5">/{col.project.slug}</div>
+                  <a
+                    href={col.project.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-brand-600 hover:underline inline-flex items-center gap-0.5 max-w-full mt-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="truncate">{col.project.url}</span>
+                    <ArrowUpRight className="w-3 h-3 shrink-0" />
+                  </a>
                 </div>
                 <button onClick={() => remove(col.project.id)} title="Remover" className="text-slate-300 hover:text-rose-500 shrink-0">
                   <X className="w-4 h-4" />
@@ -168,6 +178,9 @@ export default function CompareView({
           </div>
         ))}
       </div>
+
+      {/* gráficos de comparação (abaixo das colunas) */}
+      <CompareInsights cols={cols} colorOf={colorOf} show="charts" />
     </div>
   );
 }
