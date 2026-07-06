@@ -124,7 +124,8 @@ export default function CompareInsights({
           {/* frase do analista */}
           {bestConv && worstConv && bestConv.id !== worstConv.id && (
             <div className="card card-pad mb-4 text-[13.5px] text-slate-700 leading-relaxed">
-              🏆 <b>{bestConv.label}</b> é o que mais converte (
+              <Trophy className="inline w-4 h-4 text-amber-500 mr-1 align-[-2px]" />
+              <b>{bestConv.label}</b> é o que mais converte (
               <b className="text-emerald-600">{Math.round(bestConv.completion * 100)}%</b> até o fim)
               {bestTime && bestTime.avgMs > 0 && (
                 <>

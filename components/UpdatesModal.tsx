@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Sparkles } from "lucide-react";
+import {
+  X,
+  Sparkles,
+  Columns2,
+  Search,
+  Globe,
+  Flag,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
  * Popup de novidades exibido após o login. O "não ver novamente" é salvo no
@@ -12,29 +21,34 @@ import { X, Sparkles } from "lucide-react";
 const VERSION = "2026-07-06";
 const STORAGE_KEY = "hm_updates_dismissed";
 
-const UPDATES: { emoji: string; title: string; desc: string }[] = [
+const UPDATES: { icon: LucideIcon; tint: string; title: string; desc: string }[] = [
   {
-    emoji: "🔀",
+    icon: Columns2,
+    tint: "bg-brand-50 text-brand-600",
     title: "Comparar funis lado a lado",
     desc: "Escolha 2+ funis e veja veredito (quem mais converte / prende / abandona) e gráficos de retenção, conclusão e sessões.",
   },
   {
-    emoji: "🔎",
+    icon: Search,
+    tint: "bg-sky-50 text-sky-600",
     title: "Sessões com filtros e gráficos",
     desc: "Filtre por país, origem e status; resumo em pizza e linha por dia acima da tabela.",
   },
   {
-    emoji: "🌍",
+    icon: Globe,
+    tint: "bg-emerald-50 text-emerald-600",
     title: "Trackear quiz em outro domínio",
     desc: "Gere um script pra colar no <head> de qualquer página externa e trackear do mesmo jeito.",
   },
   {
-    emoji: "🏳️",
+    icon: Flag,
+    tint: "bg-amber-50 text-amber-600",
     title: "Bandeiras dos países",
     desc: "As sessões agora mostram a bandeira real do país (funciona até no Windows).",
   },
   {
-    emoji: "⚡",
+    icon: Zap,
+    tint: "bg-orange-50 text-orange-600",
     title: "Home com busca, paginação e loading",
     desc: "Busque funis por nome, 10 por página, e um loading ao abrir cada funil.",
   },
@@ -99,7 +113,9 @@ export default function UpdatesModal() {
         <div className="p-6 max-h-[55vh] overflow-y-auto space-y-4">
           {UPDATES.map((u, i) => (
             <div key={i} className="flex items-start gap-3">
-              <span className="text-xl leading-none mt-0.5">{u.emoji}</span>
+              <span className={`grid place-items-center w-8 h-8 rounded-lg shrink-0 ${u.tint}`}>
+                <u.icon className="w-4 h-4" strokeWidth={2.2} />
+              </span>
               <div>
                 <div className="font-bold text-ink">{u.title}</div>
                 <div className="text-[13.5px] text-slate-500 leading-relaxed">{u.desc}</div>

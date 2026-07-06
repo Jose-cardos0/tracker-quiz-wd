@@ -1,6 +1,7 @@
 // Renderiza a bandeira do país a partir do código ISO de 2 letras.
 // Usa flag-icons (SVG) — funciona em todo SO, inclusive Windows (que não
 // renderiza emoji de bandeira).
+import { Globe } from "lucide-react";
 
 export default function CountryFlag({
   code,
@@ -11,7 +12,7 @@ export default function CountryFlag({
 }) {
   const cc = code && code.length === 2 ? code.toLowerCase() : null;
   if (!cc) {
-    return <span className="text-slate-400">🌐</span>;
+    return <Globe className="w-3.5 h-3.5 text-slate-300 inline" />;
   }
   return (
     <span className="inline-flex items-center gap-1.5">

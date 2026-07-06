@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Lightbulb } from "lucide-react";
 import { normalizeSlug } from "@/lib/quiz-inject";
 
 function deriveSlug(url: string): string {
@@ -210,7 +211,8 @@ export default function ExternalQuizPage() {
               “direto” (mas é trackeada do mesmo jeito).
             </p>
             <p>
-              💡 <b>Nos anúncios do Facebook</b>, use o link com etiquetas. O{" "}
+              <Lightbulb className="inline w-4 h-4 text-amber-500 mr-1 align-[-2px]" />
+              <b>Nos anúncios do Facebook</b>, use o link com etiquetas. O{" "}
               <code className="text-[11px]">utm_source</code> você fixa como{" "}
               <code className="text-[11px]">facebook</code>; os campos{" "}
               <code className="text-[11px]">{`{{...}}`}</code> o{" "}

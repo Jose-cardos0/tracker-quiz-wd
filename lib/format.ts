@@ -26,13 +26,3 @@ export function fmtDate(iso: string): string {
     return iso;
   }
 }
-
-export function flag(country: string | null | undefined): string {
-  if (!country || country.length !== 2) return "🌐";
-  const A = 0x1f1e6;
-  const cc = country.toUpperCase();
-  return String.fromCodePoint(
-    A + (cc.charCodeAt(0) - 65),
-    A + (cc.charCodeAt(1) - 65)
-  );
-}
