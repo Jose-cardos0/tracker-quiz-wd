@@ -6,6 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus, X, ChevronDown } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
 import type { Overview, FunnelRow, TimingRow, CampaignRow } from "@/lib/data";
+import CompareInsights from "@/components/CompareInsights";
+
+const COLORS = ["#4f46e5", "#0ea5e9", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
 type Col = {
   project: {
@@ -41,6 +44,7 @@ export default function CompareView({
   const [adding, setAdding] = useState(false);
 
   const ids = cols.map((c) => c.project.id);
+  const colorOf = (i: number) => COLORS[i % COLORS.length];
 
   function nav(newIds: string[]) {
     const sp = new URLSearchParams(params.toString());
@@ -111,17 +115,22 @@ export default function CompareView({
         )}
       </div>
 
+      <CompareInsights cols={cols} colorOf={colorOf} />
+
       <div className="flex gap-4 overflow-x-auto pb-3">
-        {cols.map((col) => (
+        {cols.map((col, ci) => (
           <div key={col.project.id} className="min-w-[340px] max-w-[440px] flex-1 shrink-0">
             {/* header */}
             <div className="card card-pad mb-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link href={`/projects/${col.project.id}`} className="font-bold text-ink truncate hover:text-brand-600 block">
-                    {col.project.name}
-                  </Link>
-                  <div className="text-xs text-slate-400 font-mono truncate">/{col.project.slug}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: colorOf(ci) }} />
+                    <Link href={`/projects/${col.project.id}`} className="font-bold text-ink truncate hover:text-brand-600">
+                      {col.project.name}
+                    </Link>
+                  </div>
+                  <div className="text-xs text-slate-400 font-mono truncate mt-0.5">/{col.project.slug}</div>
                 </div>
                 <button onClick={() => remove(col.project.id)} title="Remover" className="text-slate-300 hover:text-rose-500 shrink-0">
                   <X className="w-4 h-4" />
