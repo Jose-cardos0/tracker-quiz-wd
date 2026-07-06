@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, X, ChevronDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, X, ChevronDown, ArrowUpRight, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
 import type { Overview, FunnelRow, TimingRow, CampaignRow } from "@/lib/data";
 import CompareInsights from "@/components/CompareInsights";
+import Collapsible from "@/components/Collapsible";
 
 const COLORS = ["#4f46e5", "#0ea5e9", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
@@ -137,8 +138,6 @@ export default function CompareView({
         )}
       </div>
 
-      <CompareInsights cols={cols} colorOf={colorOf} show="verdict" />
-
       <div className="relative">
         {arrows.left && (
           <button
@@ -225,8 +224,16 @@ export default function CompareView({
         </p>
       )}
 
-      {/* gráficos de comparação (abaixo das colunas) */}
-      <CompareInsights cols={cols} colorOf={colorOf} show="charts" />
+      {/* análise comparativa — tudo num dropdown, minimizado por padrão */}
+      {cols.length >= 2 && (
+        <Collapsible
+          icon={<BarChart3 className="w-4 h-4" strokeWidth={2.2} />}
+          title="Análise comparativa"
+          subtitle="Veredito, gráficos e resumo"
+        >
+          <CompareInsights cols={cols} colorOf={colorOf} />
+        </Collapsible>
+      )}
     </div>
   );
 }
