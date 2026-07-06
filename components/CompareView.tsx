@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, X, ChevronDown, ArrowUpRight } from "lucide-react";
+import { Plus, X, ChevronDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
 import type { Overview, FunnelRow, TimingRow, CampaignRow } from "@/lib/data";
 import CompareInsights from "@/components/CompareInsights";
@@ -46,6 +46,27 @@ export default function CompareView({
 
   const ids = cols.map((c) => c.project.id);
   const colorOf = (i: number) => COLORS[i % COLORS.length];
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [arrows, setArrows] = useState({ left: false, right: false });
+  function updateArrows() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setArrows({
+      left: el.scrollLeft > 8,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 8,
+    });
+  }
+  useEffect(() => {
+    updateArrows();
+    const on = () => updateArrows();
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cols.length]);
+  function scroll(dir: number) {
+    scrollRef.current?.scrollBy({ left: dir * 380, behavior: "smooth" });
+  }
 
   function nav(newIds: string[]) {
     const sp = new URLSearchParams(params.toString());
@@ -118,7 +139,26 @@ export default function CompareView({
 
       <CompareInsights cols={cols} colorOf={colorOf} show="verdict" />
 
-      <div className="flex gap-4 overflow-x-auto pb-3">
+      <div className="relative">
+        {arrows.left && (
+          <button
+            onClick={() => scroll(-1)}
+            aria-label="Rolar para a esquerda"
+            className="hidden sm:grid place-items-center absolute -left-3 top-24 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-ink"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        {arrows.right && (
+          <button
+            onClick={() => scroll(1)}
+            aria-label="Rolar para a direita"
+            className="hidden sm:grid place-items-center absolute -right-3 top-24 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-ink"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+        <div ref={scrollRef} onScroll={updateArrows} className="flex gap-4 overflow-x-auto pb-3 scroll-smooth">
         {cols.map((col, ci) => (
           <div key={col.project.id} className="min-w-[340px] max-w-[440px] flex-1 shrink-0">
             {/* header */}
@@ -177,7 +217,13 @@ export default function CompareView({
             })}
           </div>
         ))}
+        </div>
       </div>
+      {(arrows.left || arrows.right) && (
+        <p className="text-center text-xs text-slate-400 mt-1 mb-2">
+          Arraste para o lado para ver todas as colunas
+        </p>
+      )}
 
       {/* gráficos de comparação (abaixo das colunas) */}
       <CompareInsights cols={cols} colorOf={colorOf} show="charts" />

@@ -120,24 +120,6 @@ export default function CompareInsights({
               detail={worstConv ? `${Math.round((1 - worstConv.completion) * 100)}% abandonam` : "sem dados"}
             />
           </div>
-
-          {/* frase do analista */}
-          {bestConv && worstConv && bestConv.id !== worstConv.id && (
-            <div className="card card-pad mb-4 text-[13.5px] text-slate-700 leading-relaxed">
-              <Trophy className="inline w-4 h-4 text-amber-500 mr-1 align-[-2px]" />
-              <b>{bestConv.label}</b> é o que mais converte (
-              <b className="text-emerald-600">{Math.round(bestConv.completion * 100)}%</b> até o fim)
-              {bestTime && bestTime.avgMs > 0 && (
-                <>
-                  , enquanto <b>{bestTime.label}</b> é o que mais prende atenção (
-                  {fmtDuration(bestTime.avgMs)} por sessão)
-                </>
-              )}
-              . Já <b>{worstConv.label}</b> tem o maior abandono (
-              <b className="text-rose-600">{Math.round((1 - worstConv.completion) * 100)}%</b> saem antes do fim) — vale
-              revisar as primeiras etapas dele.
-            </div>
-          )}
         </>
       )}
 
@@ -222,6 +204,24 @@ export default function CompareInsights({
           </div>
         </div>
       </div>
+
+      {/* frase do analista (fechamento) */}
+      {bestConv && worstConv && bestConv.id !== worstConv.id && (
+        <div className="card card-pad mt-4 text-[13.5px] text-slate-700 leading-relaxed">
+          <Trophy className="inline w-4 h-4 text-amber-500 mr-1 align-[-2px]" />
+          <b>{bestConv.label}</b> é o que mais converte (
+          <b className="text-emerald-600">{Math.round(bestConv.completion * 100)}%</b> até o fim)
+          {bestTime && bestTime.avgMs > 0 && (
+            <>
+              , enquanto <b>{bestTime.label}</b> é o que mais prende atenção (
+              {fmtDuration(bestTime.avgMs)} por sessão)
+            </>
+          )}
+          . Já <b>{worstConv.label}</b> tem o maior abandono (
+          <b className="text-rose-600">{Math.round((1 - worstConv.completion) * 100)}%</b> saem antes do fim) — vale
+          revisar as primeiras etapas dele.
+        </div>
+      )}
       </>
       )}
     </div>
