@@ -63,3 +63,12 @@ body {
     @apply text-[11px] font-semibold text-slate-400 uppercase tracking-wide;
   }
 }
+
+/* esconde a barra de rolagem (mantém o scroll funcionando) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

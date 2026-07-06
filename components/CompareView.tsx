@@ -158,7 +158,7 @@ export default function CompareView({
             <ChevronRight className="w-5 h-5" strokeWidth={2.6} />
           </button>
         )}
-        <div ref={scrollRef} onScroll={updateArrows} className="flex gap-4 overflow-x-auto pb-3 scroll-smooth">
+        <div ref={scrollRef} onScroll={updateArrows} className="flex gap-4 overflow-x-auto pb-3 scroll-smooth no-scrollbar">
         {cols.map((col, ci) => (
           <div key={col.project.id} className="min-w-[340px] max-w-[440px] flex-1 shrink-0">
             {/* header */}
