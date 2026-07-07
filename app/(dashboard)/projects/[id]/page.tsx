@@ -16,6 +16,7 @@ import RangeTabs from "@/components/RangeTabs";
 import Collapsible from "@/components/Collapsible";
 import FunnelChart from "@/components/FunnelChart";
 import FunnelBars from "@/components/FunnelBars";
+import FloatingStepBars from "@/components/FloatingStepBars";
 import {
   Activity,
   Users,
@@ -186,8 +187,12 @@ export default async function ProjectPage({
         <FunnelChart data={chartData} />
       </section>
 
-      {/* bar chart: pessoas por etapa (contagem absoluta) */}
-      <section className="card card-pad mb-6 relative overflow-hidden">
+      {/* painel flutuante (telas largas): pessoas por etapa em pé, sticky */}
+      <FloatingStepBars data={chartData} />
+
+      {/* bar chart: pessoas por etapa (contagem absoluta) — some quando o
+          painel flutuante aparece (telas >=1750px) */}
+      <section className="card card-pad mb-6 relative overflow-hidden min-[1750px]:hidden">
         <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br from-brand-500 to-violet-500 opacity-[0.06]" />
         <div className="flex items-center gap-2">
           <span className="grid place-items-center w-7 h-7 rounded-lg bg-brand-50 text-brand-600">
