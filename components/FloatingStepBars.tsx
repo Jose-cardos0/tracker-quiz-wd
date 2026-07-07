@@ -8,6 +8,7 @@ import {
   YAxis,
   Tooltip,
   Cell,
+  LabelList,
 } from "recharts";
 import { Users } from "lucide-react";
 import type { BarPoint } from "./FunnelBars";
@@ -56,10 +57,10 @@ export default function FloatingStepBars({ data }: { data: BarPoint[] }) {
             <BarChart
               layout="vertical"
               data={data}
-              margin={{ top: 2, right: 10, left: 0, bottom: 2 }}
+              margin={{ top: 2, right: 30, left: 0, bottom: 2 }}
               barCategoryGap={2}
             >
-              <XAxis type="number" hide />
+              <XAxis type="number" domain={[0, Math.ceil(max * 1.18)]} hide />
               <YAxis
                 type="category"
                 dataKey="step"
@@ -77,6 +78,12 @@ export default function FloatingStepBars({ data }: { data: BarPoint[] }) {
                 {data.map((d, i) => (
                   <Cell key={i} fill={d.people === max ? "#4f46e5" : "#c7d2fe"} />
                 ))}
+                <LabelList
+                  dataKey="people"
+                  position="right"
+                  offset={4}
+                  style={{ fontSize: 9, fill: "#64748b", fontWeight: 700 }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

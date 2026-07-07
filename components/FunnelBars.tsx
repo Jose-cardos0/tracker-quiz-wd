@@ -9,6 +9,7 @@ import {
   Tooltip,
   CartesianGrid,
   Cell,
+  LabelList,
 } from "recharts";
 
 export type BarPoint = {
@@ -68,6 +69,12 @@ export default function FunnelBars({ data }: { data: BarPoint[] }) {
                 fill={d.people === max ? "#4f46e5" : "#c7d2fe"}
               />
             ))}
+            <LabelList
+              dataKey="people"
+              position="top"
+              offset={5}
+              style={{ fontSize: 9, fill: "#64748b", fontWeight: 700 }}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
