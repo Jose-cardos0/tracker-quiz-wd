@@ -26,3 +26,34 @@ export function fmtDate(iso: string): string {
     return iso;
   }
 }
+
+/** Deriva a origem a partir do domínio do referrer (fallback quando não há utm). */
+export function sourceFromReferrer(referrer: string | null | undefined): string | null {
+  if (!referrer) return null;
+  let host = "";
+  try {
+    host = new URL(referrer).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    host = String(referrer).toLowerCase();
+  }
+  if (/facebook|fb\.com|fb\.watch|\bfb\b/.test(host)) return "facebook";
+  if (/instagram/.test(host)) return "instagram";
+  if (/youtube|youtu\.be/.test(host)) return "youtube";
+  if (/google/.test(host)) return "google";
+  if (/tiktok/.test(host)) return "tiktok";
+  if (/bing/.test(host)) return "bing";
+  if (/t\.co|twitter|x\.com/.test(host)) return "twitter";
+  if (/whatsapp|wa\.me/.test(host)) return "whatsapp";
+  if (host) return host; // outro domínio: mostra o próprio host
+  return null;
+}
+
+/** Origem da sessão: utm_source -> referrer -> (direto). */
+export function inferSource(
+  utm: Record<string, string> | null | undefined,
+  referrer: string | null | undefined
+): string {
+  const s = utm && utm.utm_source;
+  if (s) return s;
+  return sourceFromReferrer(referrer) || "(direto)";
+}

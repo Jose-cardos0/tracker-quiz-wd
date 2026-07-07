@@ -15,7 +15,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import type { SessionRow } from "@/lib/data";
-import { fmtDate, fmtDuration } from "@/lib/format";
+import { fmtDate, fmtDuration, inferSource } from "@/lib/format";
 import CountryFlag from "@/components/CountryFlag";
 
 const COLORS = [
@@ -31,8 +31,7 @@ const COLORS = [
 const PER_PAGE = 50;
 
 const countryOf = (s: SessionRow) => s.country || "??";
-const originOf = (s: SessionRow) =>
-  (s.utm && (s.utm as any).utm_source) || "(direto)";
+const originOf = (s: SessionRow) => inferSource(s.utm, s.referrer);
 const statusOf = (s: SessionRow) => (s.completed ? "Concluiu" : "Abandonou");
 
 function countBy<T>(arr: T[], key: (x: T) => string) {
