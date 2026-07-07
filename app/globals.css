@@ -58,6 +58,9 @@ body {
   .pill-amber {
     @apply pill bg-amber-50 text-amber-700;
   }
+  .pill-orange {
+    @apply pill bg-orange-100 text-orange-700;
+  }
 
   .stat-label {
     @apply text-[11px] font-semibold text-slate-400 uppercase tracking-wide;

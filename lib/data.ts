@@ -59,6 +59,8 @@ export type SessionRow = {
   max_step: number;
   duration_ms: number;
   completed: boolean;
+  /** disparou checkout_redirect (iniciou checkout) — deriva de `events` */
+  ic?: boolean;
 };
 
 export type EventRow = {
@@ -309,7 +311,20 @@ export async function getSessions(
     .lt("started_at", to)
     .order("started_at", { ascending: false })
     .limit(limit);
-  return (data as SessionRow[]) || [];
+  const sessions = (data as SessionRow[]) || [];
+  // Marca quem iniciou checkout (evento checkout_redirect) — vira badge "IC".
+  if (sessions.length) {
+    const ids = sessions.map((s) => s.session_id);
+    const { data: ev } = await admin
+      .from("events")
+      .select("session_id")
+      .eq("project_id", id)
+      .eq("type", "checkout_redirect")
+      .in("session_id", ids);
+    const icSet = new Set((ev || []).map((e: any) => e.session_id));
+    for (const s of sessions) s.ic = icSet.has(s.session_id);
+  }
+  return sessions;
 }
 
 export async function getSession(sessionId: string): Promise<SessionRow | null> {
@@ -321,7 +336,17 @@ export async function getSession(sessionId: string): Promise<SessionRow | null> 
     )
     .eq("session_id", sessionId)
     .maybeSingle();
-  return (data as SessionRow) || null;
+  const session = (data as SessionRow) || null;
+  if (session) {
+    const { data: ev } = await admin
+      .from("events")
+      .select("session_id")
+      .eq("session_id", sessionId)
+      .eq("type", "checkout_redirect")
+      .limit(1);
+    session.ic = !!(ev && ev.length);
+  }
+  return session;
 }
 
 /** Per-question + per-value answer distribution (base do leadscore). */

@@ -32,7 +32,8 @@ const PER_PAGE = 50;
 
 const countryOf = (s: SessionRow) => s.country || "??";
 const originOf = (s: SessionRow) => inferSource(s.utm, s.referrer);
-const statusOf = (s: SessionRow) => (s.completed ? "Concluiu" : "Abandonou");
+const statusOf = (s: SessionRow) =>
+  s.ic ? "Iniciou checkout" : s.completed ? "Concluiu" : "Abandonou";
 
 function countBy<T>(arr: T[], key: (x: T) => string) {
   const m = new Map<string, number>();
@@ -81,7 +82,11 @@ export default function SessionsView({
           (country === "all" || countryOf(s) === country) &&
           (origin === "all" || originOf(s) === origin) &&
           (status === "all" ||
-            (status === "done" ? s.completed : !s.completed))
+            (status === "ic"
+              ? !!s.ic
+              : status === "done"
+              ? s.completed && !s.ic
+              : !s.completed))
       ),
     [sessions, country, origin, status]
   );
@@ -140,6 +145,7 @@ export default function SessionsView({
           onChange={resetPage(setStatus)}
           options={[
             { v: "all", l: "Todos os status" },
+            { v: "ic", l: "Iniciou checkout" },
             { v: "done", l: "Concluiu" },
             { v: "drop", l: "Abandonou" },
           ]}
@@ -193,7 +199,13 @@ export default function SessionsView({
         <Donut
           title="Por status"
           data={byStatus}
-          colorFor={(name) => (name === "Concluiu" ? "#10b981" : "#94a3b8")}
+          colorFor={(name) =>
+            name === "Iniciou checkout"
+              ? "#f97316"
+              : name === "Concluiu"
+              ? "#10b981"
+              : "#94a3b8"
+          }
         />
       </div>
 
@@ -228,14 +240,14 @@ export default function SessionsView({
                     <td className="py-3 px-4 w-44">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[70px]">
-                          <div className={`h-full rounded-full ${s.completed ? "bg-emerald-500" : "bg-brand-500"}`} style={{ width: `${Math.max(prog, 4)}%` }} />
+                          <div className={`h-full rounded-full ${s.ic ? "bg-orange-500" : s.completed ? "bg-emerald-500" : "bg-brand-500"}`} style={{ width: `${Math.max(prog, 4)}%` }} />
                         </div>
                         <span className="text-xs text-slate-500 tabular-nums">{s.max_step}/{totalSteps || "?"}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right tabular-nums text-slate-600">{fmtDuration(s.duration_ms)}</td>
                     <td className="py-3 px-4 text-center">
-                      {s.completed ? <span className="pill-green">Concluiu</span> : <span className="pill-slate">Abandonou</span>}
+                      {s.ic ? <span className="pill-orange">IC</span> : s.completed ? <span className="pill-green">Concluiu</span> : <span className="pill-slate">Abandonou</span>}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <Link href={`/projects/${projectId}/sessions/${s.session_id}`} className="text-sm font-semibold text-brand-600 hover:text-brand-700">

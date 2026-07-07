@@ -91,7 +91,16 @@ export default async function SessionDetailPage({
           label="Progresso"
           value={`Etapa ${session.max_step}/${project.total_steps || "?"}`}
         />
-        <Meta label="Status" value={session.completed ? "✓ Concluiu" : "Abandonou"} />
+        <Meta
+          label="Status"
+          value={
+            session.ic
+              ? "IC (iniciou checkout)"
+              : session.completed
+              ? "Concluiu"
+              : "Abandonou"
+          }
+        />
         <Meta label="Tempo total" value={fmtDuration(session.duration_ms)} />
         <Meta label="Visitante" value={session.visitor_id.slice(0, 8) + "…"} />
         <Meta label="cid" value={session.cid || "—"} />
