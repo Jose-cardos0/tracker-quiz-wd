@@ -162,6 +162,9 @@ export async function POST(req: NextRequest) {
     };
   });
 
+  // trava: max_step nunca pode passar do total de etapas do quiz
+  if (proj.total && maxStep > proj.total) maxStep = proj.total;
+
   // --- upsert visitor + session (atomic) ----------------------------------
   const { error: rpcErr } = await admin.rpc("apply_ingest", {
     p_session: sessionId,
