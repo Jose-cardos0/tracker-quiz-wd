@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getProject, liveUrl } from "@/lib/data";
 import { updateProject } from "../actions";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
-import TrackingSnippet from "@/components/TrackingSnippet";
+import SavedScriptModal from "@/components/SavedScriptModal";
 
 export const dynamic = "force-dynamic";
 
@@ -35,13 +35,6 @@ export default async function SettingsPage({
       <h1 className="text-[26px] leading-tight font-black text-ink tracking-tight mt-1 mb-6">
         Editar projeto
       </h1>
-
-      {saved && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold px-4 py-3">
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-          Salvo! Copie o script atualizado abaixo e cole de novo no HTML.
-        </div>
-      )}
 
       <form action={updateProject} className="card card-pad space-y-5">
         <input type="hidden" name="id" value={project.id} />
@@ -100,7 +93,8 @@ export default async function SettingsPage({
         </button>
       </form>
 
-      <TrackingSnippet
+      <SavedScriptModal
+        open={saved}
         slug={project.slug}
         totalSteps={project.total_steps ?? null}
         appUrl={process.env.NEXT_PUBLIC_APP_URL}
