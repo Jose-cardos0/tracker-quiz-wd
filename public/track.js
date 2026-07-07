@@ -318,9 +318,33 @@
       document.querySelectorAll(cfg.stepSelector)
     );
   }
+  // Se a página define a ORDEM global do funil (ex.: template healthmeai com
+  // `var ORDER = [33,3,1,2,...]`), a posição real da etapa é o índice no ORDER —
+  // NÃO o número do data-step, que vem embaralhado. Sem isto, a 1ª tela
+  // (data-step 33) era gravada como "etapa 33", gerando o bug "33/37 em 1s".
+  function orderArray() {
+    var names = ["ORDER", "STEP_ORDER", "stepOrder", "FLOW"];
+    for (var i = 0; i < names.length; i++) {
+      var a = window[names[i]];
+      if (
+        Array.isArray(a) &&
+        a.length &&
+        a.every(function (v) { return typeof v === "number"; })
+      )
+        return a;
+    }
+    return null;
+  }
   function autoIndexOf(el, all) {
     var d = el.getAttribute("data-step");
-    if (d && !isNaN(+d)) return +d;
+    if (d && !isNaN(+d)) {
+      var ord = orderArray();
+      if (ord) {
+        var p = ord.indexOf(+d);
+        if (p >= 0) return p + 1; // posição real no funil
+      }
+      return +d;
+    }
     return all.indexOf(el) + 1;
   }
   function autoNameOf(el) {
@@ -342,11 +366,15 @@
     for (var j = 0; j < all.length; j++) if (autoVisible(all[j])) return all[j];
     return null;
   }
+  function autoTotal(all) {
+    var ord = orderArray();
+    return ord ? ord.length : all.length;
+  }
   function autoCheck() {
     autoRaf = false;
     var all = autoStepEls();
     if (!all.length) return;
-    if (!cfg.totalSteps) cfg.totalSteps = all.length;
+    if (!cfg.totalSteps) cfg.totalSteps = autoTotal(all);
     var cur = autoCurrent(all);
     if (!cur || cur === autoLastEl) return;
     autoLastEl = cur;
@@ -360,7 +388,7 @@
   function setupAutoSteps() {
     var run = function () {
       var all = autoStepEls();
-      if (all.length) cfg.totalSteps = cfg.totalSteps || all.length;
+      if (all.length) cfg.totalSteps = cfg.totalSteps || autoTotal(all);
       autoCheck();
       var mo = new MutationObserver(autoSchedule);
       mo.observe(document.body, {
