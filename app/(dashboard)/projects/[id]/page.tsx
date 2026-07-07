@@ -15,6 +15,7 @@ import { buildInsights } from "@/lib/insights";
 import RangeTabs from "@/components/RangeTabs";
 import Collapsible from "@/components/Collapsible";
 import FunnelChart from "@/components/FunnelChart";
+import FunnelBars from "@/components/FunnelBars";
 import {
   Activity,
   Users,
@@ -80,6 +81,7 @@ export default async function ProjectPage({
     name: stepName(r.step_index),
     retention: base ? Math.round((r.sessions_reached / base) * 100) : 0,
     time: Math.round((timingMap.get(r.step_index)?.median_ms || 0) / 1000),
+    people: r.sessions_reached,
   }));
 
   const insights = buildInsights({
@@ -182,6 +184,22 @@ export default async function ProjectPage({
           Retenção × tempo gasto — onde o funil perde gente e onde prende.
         </p>
         <FunnelChart data={chartData} />
+      </section>
+
+      {/* bar chart: pessoas por etapa (contagem absoluta) */}
+      <section className="card card-pad mb-6 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br from-brand-500 to-violet-500 opacity-[0.06]" />
+        <div className="flex items-center gap-2">
+          <span className="grid place-items-center w-7 h-7 rounded-lg bg-brand-50 text-brand-600">
+            <Users className="w-4 h-4" strokeWidth={2.2} />
+          </span>
+          <h2 className="font-bold text-ink">Pessoas por etapa</h2>
+        </div>
+        <p className="text-[13px] text-slate-400 mb-3 mt-0.5">
+          Quantas sessões alcançaram cada etapa — o volume real em cada ponto do
+          funil.
+        </p>
+        <FunnelBars data={chartData} />
       </section>
 
       {/* mini report */}
