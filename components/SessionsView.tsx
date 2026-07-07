@@ -232,13 +232,15 @@ export default function SessionsView({
               <Donut title="Por status" data={byStatus} colorFor={statusColor} />
             </div>
 
-            {/* painel fixo à direita (telas >=1750px): 3 empilhados em vertical,
-                acompanha a rolagem */}
+            {/* telas >=1750px: donuts nas margens. 1 na esquerda + 2 na direita
+                pra evitar scroll. Fixos, acompanham a rolagem. */}
+            <aside className="hidden min-[1750px]:block fixed top-24 left-6 w-64 z-30">
+              <Donut title="Por status" data={byStatus} colorFor={statusColor} layout="col" />
+            </aside>
             <aside className="hidden min-[1750px]:block fixed top-24 right-6 w-64 z-30">
               <div className="max-h-[calc(100vh-7rem)] overflow-y-auto space-y-4 pr-1 -mr-1">
                 <Donut title="Por país" data={byCountry} layout="col" />
                 <Donut title="Por origem" data={byOrigin} layout="col" />
-                <Donut title="Por status" data={byStatus} colorFor={statusColor} layout="col" />
               </div>
             </aside>
           </>
