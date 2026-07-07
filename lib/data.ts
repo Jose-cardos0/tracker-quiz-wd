@@ -257,9 +257,17 @@ export async function getCampaigns(
     string,
     { source: string; campaign: string; cid: string; sessions: number; completed: number; sum: number }
   >();
+  const decode = (v: string) => {
+    if (!v) return "";
+    try {
+      return decodeURIComponent(v.replace(/\+/g, " "));
+    } catch {
+      return v;
+    }
+  };
   for (const s of (data as any[]) || []) {
     const source = inferSource(s.utm, s.referrer);
-    const campaign = (s.utm && s.utm.utm_campaign) || "";
+    const campaign = decode((s.utm && s.utm.utm_campaign) || "");
     const cid = s.cid || "";
     const key = `${source}|||${campaign}|||${cid}`;
     let e = map.get(key);
