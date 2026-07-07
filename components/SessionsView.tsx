@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ResponsiveContainer,
@@ -65,6 +65,29 @@ export default function SessionsView({
   const [origin, setOrigin] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
+
+  // Filtros persistem por projeto (localStorage): saiu e voltou, continuam.
+  // Só somem quando o usuário clica "Limpar filtros" (que grava "all").
+  const FKEY = `sessfilters:${projectId}`;
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FKEY);
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f.country) setCountry(f.country);
+        if (f.origin) setOrigin(f.origin);
+        if (f.status) setStatus(f.status);
+      }
+    } catch {}
+    setLoaded(true);
+  }, [FKEY]);
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem(FKEY, JSON.stringify({ country, origin, status }));
+    } catch {}
+  }, [loaded, FKEY, country, origin, status]);
 
   const countries = useMemo(
     () => Array.from(new Set(sessions.map(countryOf))).sort(),
@@ -193,21 +216,34 @@ export default function SessionsView({
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        <Donut title="Por país" data={byCountry} />
-        <Donut title="Por origem" data={byOrigin} />
-        <Donut
-          title="Por status"
-          data={byStatus}
-          colorFor={(name) =>
-            name === "Iniciou checkout"
-              ? "#f97316"
-              : name === "Concluiu"
-              ? "#10b981"
-              : "#94a3b8"
-          }
-        />
-      </div>
+      {(() => {
+        const statusColor = (name: string) =>
+          name === "Iniciou checkout"
+            ? "#f97316"
+            : name === "Concluiu"
+            ? "#10b981"
+            : "#94a3b8";
+        return (
+          <>
+            {/* inline (telas normais): 3 em linha; some quando o painel fixo aparece */}
+            <div className="grid sm:grid-cols-3 gap-4 mb-6 min-[1750px]:hidden">
+              <Donut title="Por país" data={byCountry} />
+              <Donut title="Por origem" data={byOrigin} />
+              <Donut title="Por status" data={byStatus} colorFor={statusColor} />
+            </div>
+
+            {/* painel fixo à direita (telas >=1750px): 3 empilhados em vertical,
+                acompanha a rolagem */}
+            <aside className="hidden min-[1750px]:block fixed top-24 right-6 w-64 z-30">
+              <div className="max-h-[calc(100vh-7rem)] overflow-y-auto space-y-4 pr-1 -mr-1">
+                <Donut title="Por país" data={byCountry} layout="col" />
+                <Donut title="Por origem" data={byOrigin} layout="col" />
+                <Donut title="Por status" data={byStatus} colorFor={statusColor} layout="col" />
+              </div>
+            </aside>
+          </>
+        );
+      })()}
 
       {/* tabela */}
       <div className="card overflow-hidden">
@@ -317,10 +353,12 @@ function Donut({
   title,
   data,
   colorFor,
+  layout = "row",
 }: {
   title: string;
   data: { name: string; value: number }[];
   colorFor?: (name: string) => string;
+  layout?: "row" | "col";
 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const color = (name: string, i: number) =>
@@ -331,7 +369,13 @@ function Donut({
       {total === 0 ? (
         <p className="text-sm text-slate-400 py-8 text-center">Sem dados.</p>
       ) : (
-        <div className="flex items-center gap-3">
+        <div
+          className={
+            layout === "col"
+              ? "flex flex-col items-center gap-2"
+              : "flex items-center gap-3"
+          }
+        >
           <div className="w-[110px] h-[110px] shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -344,7 +388,7 @@ function Donut({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <ul className="flex-1 min-w-0 space-y-1">
+          <ul className={layout === "col" ? "w-full space-y-1" : "flex-1 min-w-0 space-y-1"}>
             {data.map((d, i) => (
               <li key={i} className="flex items-center gap-2 text-xs">
                 <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color(d.name, i) }} />
