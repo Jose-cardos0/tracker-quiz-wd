@@ -119,7 +119,10 @@ export async function POST(req: NextRequest) {
     if (e.type === "step_exit" && typeof e.duration_ms === "number") {
       addDur += Math.max(0, Math.min(e.duration_ms, 1000 * 60 * 30)); // cap 30min
     }
-    if (e.type === "quiz_complete") completed = true;
+    // "reached_last" (chegou na última etapa) também conta como conclusão —
+    // quizzes com autoSteps não disparam quiz_complete, então sem isso a taxa
+    // de conclusão fica sempre 0%.
+    if (e.type === "quiz_complete" || e.type === "reached_last") completed = true;
     if (e.type === "session_start") {
       startedAt = e.ts ? new Date(e.ts).toISOString() : null;
     }

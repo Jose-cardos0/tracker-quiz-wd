@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { inferSource } from "@/lib/format";
 
 export type Project = {
   id: string;
@@ -241,19 +242,46 @@ export async function getCampaigns(
   to: string
 ): Promise<CampaignRow[]> {
   const admin = createAdminClient();
-  const { data } = await admin.rpc("project_campaigns", {
-    p_id: id,
-    p_from: from,
-    p_to: to,
-  });
-  return ((data as any[]) || []).map((r) => ({
-    source: r.source || "(direto)",
-    campaign: r.campaign || "",
-    cid: r.cid || "",
-    sessions: Number(r.sessions || 0),
-    completed: Number(r.completed || 0),
-    avg_max_step: Number(r.avg_max_step || 0),
-  }));
+  // Agrega no servidor a partir das sessões, inferindo a origem pelo referrer
+  // quando não há utm (ex.: tráfego do FB sem tags). Assim TODOS os funis
+  // mostram origem + campanha, sem depender de migração SQL.
+  const { data } = await admin
+    .from("sessions")
+    .select("utm,cid,referrer,completed,max_step")
+    .eq("project_id", id)
+    .gte("started_at", from)
+    .lt("started_at", to)
+    .limit(20000);
+
+  const map = new Map<
+    string,
+    { source: string; campaign: string; cid: string; sessions: number; completed: number; sum: number }
+  >();
+  for (const s of (data as any[]) || []) {
+    const source = inferSource(s.utm, s.referrer);
+    const campaign = (s.utm && s.utm.utm_campaign) || "";
+    const cid = s.cid || "";
+    const key = `${source}|||${campaign}|||${cid}`;
+    let e = map.get(key);
+    if (!e) {
+      e = { source, campaign, cid, sessions: 0, completed: 0, sum: 0 };
+      map.set(key, e);
+    }
+    e.sessions++;
+    if (s.completed) e.completed++;
+    e.sum += s.max_step || 0;
+  }
+
+  return [...map.values()]
+    .map((e) => ({
+      source: e.source,
+      campaign: e.campaign,
+      cid: e.cid,
+      sessions: e.sessions,
+      completed: e.completed,
+      avg_max_step: e.sessions ? Math.round((e.sum / e.sessions) * 10) / 10 : 0,
+    }))
+    .sort((a, b) => b.sessions - a.sessions);
 }
 
 export async function getSessions(
