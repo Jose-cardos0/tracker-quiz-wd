@@ -43,7 +43,9 @@ export async function updateProject(formData: FormData) {
 
   revalidatePath(`/projects/${id}`);
   revalidatePath(`/projects/${id}/settings`);
-  redirect(`/projects/${id}`);
+  // Volta pra edição (não pro dashboard) mostrando o script já regenerado com
+  // as alterações, pronto pra colar de novo no HTML.
+  redirect(`/projects/${id}/settings?saved=1`);
 }
 
 export async function deleteProject(formData: FormData) {
