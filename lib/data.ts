@@ -238,6 +238,36 @@ export async function getTiming(
   }));
 }
 
+// Decodifica utm_campaign de forma robusta. A rede de afiliado/cloaker manda
+// valores (a) duplo-encodados (%255B = %5B = "[") e (b) truncados no meio de um
+// escape (termina em "%2" ou "%"), o que faz o decodeURIComponent normal travar
+// e o painel mostrar "%5B..." cru + duplicar linhas. Aqui: descasca em camadas,
+// ignora o escape incompleto do fim e, se sobrar lixo no meio, decodifica só os
+// escapes válidos. NÃO desfaz o corte (o dado já veio cortado da fonte).
+export function smartDecode(raw: string): string {
+  if (!raw) return "";
+  let v = raw.replace(/\+/g, " ");
+  for (let i = 0; i < 3; i++) {
+    if (!/%[0-9a-fA-F]{2}/.test(v)) break; // nada mais encodado
+    const safe = v.replace(/%[0-9a-fA-F]?$/, ""); // remove escape incompleto no fim
+    let dec: string;
+    try {
+      dec = decodeURIComponent(safe);
+    } catch {
+      dec = safe.replace(/%[0-9a-fA-F]{2}/g, (m) => {
+        try {
+          return decodeURIComponent(m);
+        } catch {
+          return m;
+        }
+      });
+    }
+    if (dec === v) break; // convergiu
+    v = dec;
+  }
+  return v;
+}
+
 export async function getCampaigns(
   id: string,
   from: string,
@@ -259,17 +289,9 @@ export async function getCampaigns(
     string,
     { source: string; campaign: string; cid: string; sessions: number; completed: number; sum: number }
   >();
-  const decode = (v: string) => {
-    if (!v) return "";
-    try {
-      return decodeURIComponent(v.replace(/\+/g, " "));
-    } catch {
-      return v;
-    }
-  };
   for (const s of (data as any[]) || []) {
     const source = inferSource(s.utm, s.referrer);
-    const campaign = decode((s.utm && s.utm.utm_campaign) || "");
+    const campaign = smartDecode((s.utm && s.utm.utm_campaign) || "");
     const cid = s.cid || "";
     const key = `${source}|||${campaign}|||${cid}`;
     let e = map.get(key);
