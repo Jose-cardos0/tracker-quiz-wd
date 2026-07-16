@@ -6,6 +6,7 @@ import {
   getFunnel,
   getTiming,
   getCampaigns,
+  getCheckoutCount,
   resolveRange,
   rangeQuery,
   liveUrl,
@@ -52,11 +53,12 @@ export default async function ProjectPage({
   const project = await getProject(params.id);
   if (!project) notFound();
 
-  const [ov, funnel, timing, campaigns] = await Promise.all([
+  const [ov, funnel, timing, campaigns, icCount] = await Promise.all([
     getOverview(project.id, from, to),
     getFunnel(project.id, from, to),
     getTiming(project.id, from, to),
     getCampaigns(project.id, from, to),
+    getCheckoutCount(project.id, from, to),
   ]);
 
   const names = (project.step_names || {}) as Record<string, string>;
@@ -347,6 +349,56 @@ export default async function ProjectPage({
                   </div>
                 );
               })}
+
+              {/* etapinha laranja IC — quem iniciou checkout (passo além da
+                  última etapa; subconjunto de quem concluiu) */}
+              {(() => {
+                const lastReached =
+                  funnel[funnel.length - 1]?.sessions_reached || 0;
+                const icPct = base ? Math.round((icCount / base) * 100) : 0;
+                const icWidth = base ? (icCount / base) * 100 : 0;
+                const dropFromLast = lastReached
+                  ? Math.round(((lastReached - icCount) / lastReached) * 100)
+                  : 0;
+                return (
+                  <div className="relative flex items-center gap-3.5">
+                    <div className="relative z-10 w-8 h-8 shrink-0 rounded-full grid place-items-center text-[10px] font-extrabold ring-4 ring-white bg-orange-100 text-orange-600">
+                      IC
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3 mb-1.5">
+                        <span className="text-[13px] font-semibold text-orange-600 truncate">
+                          Iniciou checkout
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {dropFromLast > 0 && (
+                            <span className="text-[11px] font-bold rounded-full px-1.5 py-0.5 bg-orange-100 text-orange-700">
+                              −{dropFromLast}%
+                            </span>
+                          )}
+                          <span className="text-[13px] tabular-nums text-slate-400">
+                            <b className="text-ink">
+                              {icCount.toLocaleString("pt-BR")}
+                            </b>{" "}
+                            · {icPct}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-7 rounded-lg bg-slate-50 ring-1 ring-slate-100 overflow-hidden relative">
+                        <div
+                          className="h-full rounded-lg transition-all duration-500 bg-gradient-to-r from-orange-400 to-orange-500"
+                          style={{ width: `${Math.max(icWidth, 3)}%` }}
+                        />
+                        {icPct >= 16 && (
+                          <span className="absolute inset-y-0 left-2.5 flex items-center text-[11px] font-bold text-white/95">
+                            {icPct}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

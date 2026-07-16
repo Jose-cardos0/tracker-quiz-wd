@@ -219,6 +219,24 @@ export async function getFunnel(
   }));
 }
 
+/** Nº de sessões que iniciaram checkout (evento checkout_redirect) no período. */
+export async function getCheckoutCount(
+  id: string,
+  from: string,
+  to: string
+): Promise<number> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("events")
+    .select("session_id")
+    .eq("project_id", id)
+    .eq("type", "checkout_redirect")
+    .gte("created_at", from)
+    .lt("created_at", to);
+  if (!data) return 0;
+  return new Set((data as any[]).map((e) => e.session_id)).size;
+}
+
 export async function getTiming(
   id: string,
   from: string,
