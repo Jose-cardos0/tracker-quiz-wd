@@ -108,8 +108,11 @@ export default function SessionsView({
             (status === "ic"
               ? !!s.ic
               : status === "done"
-              ? s.completed && !s.ic
-              : !s.completed))
+              ? // "Concluiu" inclui os IC também (pra iniciar checkout precisa
+                // ter concluído). As linhas continuam com badge/cor própria.
+                s.completed || !!s.ic
+              : // "Abandonou" = não concluiu nem iniciou checkout
+                !s.completed && !s.ic))
       ),
     [sessions, country, origin, status]
   );
