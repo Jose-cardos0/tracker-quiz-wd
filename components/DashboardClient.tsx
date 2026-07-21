@@ -43,6 +43,7 @@ type Funnel = {
   ic: number;
   avgDurationMs: number | null;
   daily: { date: string; sessions: number; completed: number }[];
+  icDaily: { date: string; ic: number }[];
   bySource: NameCount[];
   byCountry: NameCount[];
   campaigns: CampaignAgg[];
@@ -112,14 +113,26 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
   }, [chosen]);
 
   const daily = useMemo(() => {
-    const m = new Map<string, { sessions: number; completed: number }>();
-    for (const f of chosen)
+    const m = new Map<
+      string,
+      { sessions: number; completed: number; ic: number }
+    >();
+    const get = (date: string) => {
+      let e = m.get(date);
+      if (!e) {
+        e = { sessions: 0, completed: 0, ic: 0 };
+        m.set(date, e);
+      }
+      return e;
+    };
+    for (const f of chosen) {
       for (const d of f.daily) {
-        const e = m.get(d.date) || { sessions: 0, completed: 0 };
+        const e = get(d.date);
         e.sessions += d.sessions;
         e.completed += d.completed;
-        m.set(d.date, e);
       }
+      for (const d of f.icDaily) get(d.date).ic += d.ic;
+    }
     return [...m.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, v]) => ({
@@ -286,12 +299,14 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
                   <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} labelStyle={{ fontWeight: 700, color: "#0f172a" }} />
                   <Area type="monotone" dataKey="sessions" name="Sessões" stroke="#4f46e5" strokeWidth={2.5} fill="url(#dSess)" isAnimationActive={false} />
                   <Area type="monotone" dataKey="completed" name="Concluíram" stroke="#10b981" strokeWidth={2} fill="transparent" isAnimationActive={false} />
+                  <Area type="monotone" dataKey="ic" name="Iniciou checkout" stroke="#f97316" strokeWidth={2} fill="transparent" isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
             <div className="flex items-center justify-center gap-5 mt-2 text-xs text-slate-500">
               <span className="flex items-center gap-1.5"><i className="inline-block w-3 h-1 rounded bg-brand-600" /> Sessões</span>
               <span className="flex items-center gap-1.5"><i className="inline-block w-3 h-1 rounded bg-emerald-500" /> Concluíram</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block w-3 h-1 rounded bg-orange-500" /> Iniciou checkout</span>
             </div>
           </section>
 

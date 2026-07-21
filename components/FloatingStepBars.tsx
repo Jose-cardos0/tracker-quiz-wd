@@ -41,7 +41,7 @@ export default function FloatingStepBars({ data }: { data: BarPoint[] }) {
   const height = Math.max(320, data.length * 16 + 12);
 
   return (
-    <aside className="hidden min-[1750px]:block fixed top-24 right-6 w-56 z-30">
+    <aside className="hidden min-[1920px]:block fixed top-24 right-6 w-56 z-30">
       <div className="card card-pad">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="grid place-items-center w-7 h-7 rounded-lg bg-brand-50 text-brand-600">

@@ -320,6 +320,38 @@ export async function getCheckoutCount(
   return new Set((data as any[]).map((e) => e.session_id)).size;
 }
 
+/** IC total + por dia (sessões distintas com checkout_redirect) — dashboard geral. */
+export async function getCheckoutDaily(
+  id: string,
+  from: string,
+  to: string
+): Promise<{ total: number; daily: { date: string; ic: number }[] }> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("events")
+    .select("session_id,created_at")
+    .eq("project_id", id)
+    .eq("type", "checkout_redirect")
+    .gte("created_at", from)
+    .lt("created_at", to);
+  const perDay = new Map<string, Set<string>>();
+  const all = new Set<string>();
+  for (const e of (data as any[]) || []) {
+    const d = String(e.created_at).slice(0, 10);
+    let s = perDay.get(d);
+    if (!s) {
+      s = new Set();
+      perDay.set(d, s);
+    }
+    s.add(e.session_id);
+    all.add(e.session_id);
+  }
+  const daily = [...perDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, s]) => ({ date, ic: s.size }));
+  return { total: all.size, daily };
+}
+
 export async function getTiming(
   id: string,
   from: string,

@@ -23,7 +23,7 @@ export default async function DashboardLayout({
       <UpdatesModal />
       <Header />
       <Sidebar />
-      <main className="lg:pl-16">
+      <main className="lg:pl-60">
         <div className="max-w-6xl mx-auto px-5 py-8">{children}</div>
       </main>
     </div>

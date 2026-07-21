@@ -1,7 +1,7 @@
 import {
   getProjects,
   getOverview,
-  getCheckoutCount,
+  getCheckoutDaily,
   getSessionsAgg,
   resolveRange,
 } from "@/lib/data";
@@ -23,7 +23,7 @@ export default async function DashboardPage({
     projects.map(async (p) => {
       const [ov, ic, agg] = await Promise.all([
         getOverview(p.id, from, to),
-        getCheckoutCount(p.id, from, to),
+        getCheckoutDaily(p.id, from, to),
         getSessionsAgg(p.id, from, to),
       ]);
       return {
@@ -32,7 +32,8 @@ export default async function DashboardPage({
         sessions: ov.sessions,
         visitors: ov.visitors,
         completed: ov.completed,
-        ic,
+        ic: ic.total,
+        icDaily: ic.daily,
         avgDurationMs: ov.avg_duration_ms,
         daily: agg.daily,
         bySource: agg.bySource,

@@ -229,7 +229,7 @@ export default function SessionsView({
         return (
           <>
             {/* inline (telas normais): 3 em linha; some quando o painel fixo aparece */}
-            <div className="grid sm:grid-cols-3 gap-4 mb-6 min-[1750px]:hidden">
+            <div className="grid sm:grid-cols-3 gap-4 mb-6 min-[1920px]:hidden">
               <Donut title="Por país" data={byCountry} />
               <Donut title="Por origem" data={byOrigin} />
               <Donut title="Por status" data={byStatus} colorFor={statusColor} />
@@ -237,10 +237,10 @@ export default function SessionsView({
 
             {/* telas >=1750px: donuts nas margens. 1 na esquerda + 2 na direita
                 pra evitar scroll. Fixos, acompanham a rolagem. */}
-            <aside className="hidden min-[1750px]:block fixed top-24 left-[5.5rem] w-56 z-30">
+            <aside className="hidden min-[1920px]:block fixed top-24 left-[16.5rem] w-56 z-30">
               <Donut title="Por status" data={byStatus} colorFor={statusColor} layout="col" />
             </aside>
-            <aside className="hidden min-[1750px]:block fixed top-24 right-6 w-56 z-30">
+            <aside className="hidden min-[1920px]:block fixed top-24 right-6 w-56 z-30">
               <div className="max-h-[calc(100vh-7rem)] overflow-y-auto space-y-4 pr-1 -mr-1">
                 <Donut title="Por país" data={byCountry} layout="col" />
                 <Donut title="Por origem" data={byOrigin} layout="col" />
