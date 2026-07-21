@@ -72,6 +72,7 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
   const [selected, setSelected] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [expandComp, setExpandComp] = useState(false);
+  const [campPage, setCampPage] = useState(1);
 
   useEffect(() => {
     try {
@@ -399,30 +400,61 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {campaigns.slice(0, 20).map((c, i) => (
-                      <tr key={i} className="border-t border-slate-100">
-                        <td className="py-2.5 px-2 text-slate-400 tabular-nums">{i + 1}</td>
-                        <td className="py-2.5 px-2 font-semibold text-ink">{c.source}</td>
-                        <td className="py-2.5 px-2 text-slate-600 max-w-[280px] truncate" title={c.campaign}>
-                          {c.campaign}
-                        </td>
-                        <td className="py-2.5 px-2 text-right tabular-nums text-ink font-semibold">
-                          {c.sessions.toLocaleString("pt-BR")}
-                        </td>
-                        <td className="py-2.5 px-2 text-right tabular-nums text-slate-600">
-                          {c.completed.toLocaleString("pt-BR")}
-                        </td>
-                        <td className="py-2.5 px-2 text-right tabular-nums font-semibold text-brand-600">
-                          {pct(c.completed, c.sessions)}
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const PER = 10;
+                      const pages = Math.max(1, Math.ceil(campaigns.length / PER));
+                      const cur = Math.min(campPage, pages);
+                      return campaigns
+                        .slice((cur - 1) * PER, cur * PER)
+                        .map((c, idx) => {
+                          const rank = (cur - 1) * PER + idx + 1;
+                          return (
+                            <tr key={rank} className="border-t border-slate-100">
+                              <td className="py-2.5 px-2 text-slate-400 tabular-nums">{rank}</td>
+                              <td className="py-2.5 px-2 font-semibold text-ink">{c.source}</td>
+                              <td className="py-2.5 px-2 text-slate-600 max-w-[280px] truncate" title={c.campaign}>
+                                {c.campaign}
+                              </td>
+                              <td className="py-2.5 px-2 text-right tabular-nums text-ink font-semibold">
+                                {c.sessions.toLocaleString("pt-BR")}
+                              </td>
+                              <td className="py-2.5 px-2 text-right tabular-nums text-slate-600">
+                                {c.completed.toLocaleString("pt-BR")}
+                              </td>
+                              <td className="py-2.5 px-2 text-right tabular-nums font-semibold text-brand-600">
+                                {pct(c.completed, c.sessions)}
+                              </td>
+                            </tr>
+                          );
+                        });
+                    })()}
                   </tbody>
                 </table>
-                {campaigns.length > 20 && (
-                  <p className="text-xs text-slate-400 mt-3 text-center">
-                    Mostrando top 20 de {campaigns.length} campanhas.
-                  </p>
+                {campaigns.length > 10 && (
+                  <div className="flex items-center justify-center gap-3 mt-4">
+                    <button
+                      disabled={campPage <= 1}
+                      onClick={() => setCampPage((p) => Math.max(1, p - 1))}
+                      className="grid place-items-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40 hover:text-ink transition"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-slate-400 tabular-nums">
+                      {Math.min(campPage, Math.ceil(campaigns.length / 10))} /{" "}
+                      {Math.ceil(campaigns.length / 10)}
+                    </span>
+                    <button
+                      disabled={campPage >= Math.ceil(campaigns.length / 10)}
+                      onClick={() =>
+                        setCampPage((p) =>
+                          Math.min(Math.ceil(campaigns.length / 10), p + 1)
+                        )
+                      }
+                      className="grid place-items-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40 hover:text-ink transition"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             )}
