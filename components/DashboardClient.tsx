@@ -25,6 +25,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Download,
+  TrendingDown,
   type LucideIcon,
 } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
@@ -224,6 +226,70 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
     return [...m.values()].sort((a, b) => b.sessions - a.sessions);
   }, [chosen]);
 
+  // gargalo geral: funil macro Sessões -> Concluíram -> Checkout
+  const gargalo = useMemo(() => {
+    const s = agg.sessions;
+    const c = agg.completed;
+    const i = agg.ic;
+    const dropComplete = s ? Math.round(((s - c) / s) * 100) : 0;
+    const dropCheckout = c ? Math.round(((c - i) / c) * 100) : 0;
+    const stages = [
+      { key: "complete", label: "Sessões → Concluíram", drop: dropComplete, lost: s - c },
+      { key: "checkout", label: "Concluíram → Checkout", drop: dropCheckout, lost: c - i },
+    ];
+    const worst = stages.reduce((a, b) => (b.drop > a.drop ? b : a), stages[0]);
+    return { s, c, i, dropComplete, dropCheckout, worst };
+  }, [agg]);
+
+  function exportCsv() {
+    const cell = (v: string | number) => {
+      const s = String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const conv = (a: number, b: number) =>
+      b ? ((a / b) * 100).toFixed(1) : "0";
+    const header = [
+      "Funil",
+      "Sessoes",
+      "Visitantes",
+      "Concluiram",
+      "Conversao %",
+      "IC",
+      "IC %",
+      "Tempo medio (s)",
+    ];
+    const body = chosen.map((f) => [
+      f.name,
+      f.sessions,
+      f.visitors,
+      f.completed,
+      conv(f.completed, f.sessions),
+      f.ic,
+      conv(f.ic, f.sessions),
+      Math.round((f.avgDurationMs || 0) / 1000),
+    ]);
+    const total = [
+      "TOTAL",
+      agg.sessions,
+      agg.visitors,
+      agg.completed,
+      conv(agg.completed, agg.sessions),
+      agg.ic,
+      conv(agg.ic, agg.sessions),
+      Math.round(agg.avgDur / 1000),
+    ];
+    const csv =
+      "﻿" +
+      [header, ...body, total].map((r) => r.map(cell).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dashboard-funis.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (funnels.length === 0) {
     return (
       <div className="card card-pad text-center py-16 text-slate-400">
@@ -249,6 +315,17 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
         </div>
       ) : (
         <>
+          {/* toolbar */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <span className="text-sm text-slate-400">
+              {chosen.length} {chosen.length === 1 ? "funil" : "funis"} no
+              cruzamento
+            </span>
+            <button onClick={exportCsv} className="btn-ghost text-sm">
+              <Download className="w-4 h-4" /> Exportar CSV
+            </button>
+          </div>
+
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <Kpi icon={Activity} label="Sessões" value={agg.sessions.toLocaleString("pt-BR")} grad="from-indigo-500 to-violet-500" />
@@ -284,6 +361,73 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
               sub={() => "sessões no período"}
             />
           </div>
+
+          {/* gargalo geral */}
+          <section className="card card-pad mb-6">
+            <div className="flex items-center gap-2.5 mb-1">
+              <span className="grid place-items-center w-7 h-7 rounded-lg bg-rose-50 text-rose-600">
+                <TrendingDown className="w-4 h-4" strokeWidth={2.2} />
+              </span>
+              <h3 className="font-bold text-ink">Gargalo geral</h3>
+            </div>
+            <p className="text-[13px] text-slate-400 mb-4">
+              Onde o funil geral mais perde gente — Sessões → Concluíram →
+              Checkout.
+            </p>
+            <div className="space-y-2.5">
+              {[
+                { label: "Sessões", n: gargalo.s, tone: "brand", drop: 0 },
+                { label: "Concluíram", n: gargalo.c, tone: "emerald", drop: gargalo.dropComplete },
+                { label: "Iniciou checkout", n: gargalo.i, tone: "orange", drop: gargalo.dropCheckout },
+              ].map((st, i) => {
+                const pctBase = gargalo.s ? Math.round((st.n / gargalo.s) * 100) : 0;
+                const grad =
+                  st.tone === "brand"
+                    ? "from-brand-400 to-brand-600"
+                    : st.tone === "emerald"
+                    ? "from-emerald-400 to-emerald-500"
+                    : "from-orange-400 to-orange-500";
+                return (
+                  <div key={i}>
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                      <span className="text-[13px] font-semibold text-slate-700">
+                        {st.label}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {i > 0 && st.drop > 0 && (
+                          <span className="text-[11px] font-bold rounded-full px-1.5 py-0.5 bg-rose-100 text-rose-700">
+                            −{st.drop}%
+                          </span>
+                        )}
+                        <span className="text-[13px] tabular-nums text-slate-400">
+                          <b className="text-ink">
+                            {st.n.toLocaleString("pt-BR")}
+                          </b>{" "}
+                          · {pctBase}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-7 rounded-lg bg-slate-50 ring-1 ring-slate-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-lg bg-gradient-to-r ${grad} transition-all duration-500`}
+                        style={{ width: `${Math.max(pctBase, 3)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {gargalo.s > 0 && (
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-rose-50 text-rose-700 px-4 py-3 text-[13px]">
+                <TrendingDown className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Maior perda em <b>{gargalo.worst.label}</b> — cai{" "}
+                  <b>{gargalo.worst.drop}%</b> (
+                  {gargalo.worst.lost.toLocaleString("pt-BR")} sessões).
+                </span>
+              </div>
+            )}
+          </section>
 
           {/* sessões por dia */}
           <section className="card card-pad mb-6">
