@@ -22,6 +22,9 @@ import {
   Target,
   ShoppingCart,
   Clock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
@@ -68,6 +71,7 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
   const allKey = allIds.join(",");
   const [selected, setSelected] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [expandComp, setExpandComp] = useState(false);
 
   useEffect(() => {
     try {
@@ -311,62 +315,49 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
           </section>
 
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* comparativo por funil */}
+            {/* comparativo por funil — top 10 + expandir */}
             <section className="card card-pad">
               <h3 className="font-bold text-ink mb-1">Comparativo por funil</h3>
               <p className="text-[13px] text-slate-400 mb-3">Sessões · % conclusão por funil.</p>
-              <div style={{ height: Math.max(200, compare.length * 34 + 20) }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={compare} margin={{ top: 4, right: 44, left: 4, bottom: 4 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} interval={0} tickFormatter={(v: string) => (v.length > 18 ? v.slice(0, 17) + "…" : v)} />
-                    <Tooltip cursor={{ fill: "#f1f5f9" }} contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(val: any, _n, p: any) => [`${val} sessões · ${p.payload.comp}% conclusão`, p.payload.name]} />
-                    <Bar dataKey="sessions" radius={[0, 4, 4, 0]} isAnimationActive={false}>
-                      {compare.map((c, i) => (
-                        <Cell key={c.id} fill={PALETTE[funnels.findIndex((f) => f.id === c.id) % PALETTE.length]} />
-                      ))}
-                      <LabelList dataKey="sessions" position="right" offset={6} style={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {(() => {
+                const shown = expandComp ? compare : compare.slice(0, 10);
+                return (
+                  <>
+                    <div style={{ height: Math.max(160, shown.length * 34 + 20) }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart layout="vertical" data={shown} margin={{ top: 4, right: 44, left: 4, bottom: 4 }}>
+                          <XAxis type="number" hide />
+                          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} interval={0} tickFormatter={(v: string) => (v.length > 18 ? v.slice(0, 17) + "…" : v)} />
+                          <Tooltip cursor={{ fill: "#f1f5f9" }} contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(val: any, _n, p: any) => [`${val} sessões · ${p.payload.comp}% conclusão`, p.payload.name]} />
+                          <Bar dataKey="sessions" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+                            {shown.map((c) => (
+                              <Cell key={c.id} fill={PALETTE[funnels.findIndex((f) => f.id === c.id) % PALETTE.length]} />
+                            ))}
+                            <LabelList dataKey="sessions" position="right" offset={6} style={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {compare.length > 10 && (
+                      <button
+                        onClick={() => setExpandComp((v) => !v)}
+                        className="mt-3 w-full inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
+                      >
+                        {expandComp ? "Ver menos" : `Ver todos (${compare.length})`}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${expandComp ? "rotate-180" : ""}`} />
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </section>
 
             {/* participação */}
-            <section className="card card-pad">
-              <h3 className="font-bold text-ink mb-1">Participação nas sessões</h3>
-              <p className="text-[13px] text-slate-400 mb-3">Fatia de cada funil no total.</p>
-              {share.length === 0 ? (
-                <p className="text-sm text-slate-400 py-10 text-center">Sem sessões.</p>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="w-[150px] h-[150px] shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={share} dataKey="value" nameKey="name" innerRadius={44} outerRadius={72} paddingAngle={2} stroke="none" isAnimationActive={false}>
-                          {share.map((s, i) => (
-                            <Cell key={i} fill={PALETTE[funnels.findIndex((f) => f.name === s.name) % PALETTE.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ul className="flex-1 min-w-0 space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
-                    {share.map((s, i) => {
-                      const total = share.reduce((a, b) => a + b.value, 0);
-                      return (
-                        <li key={i} className="flex items-center gap-2 text-xs">
-                          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PALETTE[funnels.findIndex((f) => f.name === s.name) % PALETTE.length] }} />
-                          <span className="text-slate-600 truncate flex-1">{s.name}</span>
-                          <span className="text-ink font-semibold tabular-nums">{Math.round((s.value / total) * 100)}%</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </section>
+            <MiniDonut
+              title="Participação nas sessões"
+              subtitle="Fatia de cada funil no total."
+              data={share}
+            />
           </div>
 
           {/* origem + país agregados */}
@@ -508,8 +499,13 @@ function MiniDonut({
   subtitle: string;
   data: { name: string; value: number }[];
 }) {
+  const [page, setPage] = useState(1);
+  const PER = 10;
   const total = data.reduce((s, d) => s + d.value, 0);
-  const top = data.slice(0, 8);
+  const totalPages = Math.max(1, Math.ceil(data.length / PER));
+  const cur = Math.min(page, totalPages);
+  const pageItems = data.slice((cur - 1) * PER, cur * PER);
+
   return (
     <section className="card card-pad">
       <h3 className="font-bold text-ink mb-1">{title}</h3>
@@ -517,12 +513,13 @@ function MiniDonut({
       {total === 0 ? (
         <p className="text-sm text-slate-400 py-8 text-center">Sem dados.</p>
       ) : (
-        <div className="flex items-center gap-4">
-          <div className="w-[140px] h-[140px] shrink-0">
+        <>
+          {/* gráfico em cima */}
+          <div className="h-[190px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={top} dataKey="value" nameKey="name" innerRadius={42} outerRadius={68} paddingAngle={2} stroke="none" isAnimationActive={false}>
-                  {top.map((_, i) => (
+                <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={1.5} stroke="none" isAnimationActive={false}>
+                  {data.map((_, i) => (
                     <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                   ))}
                 </Pie>
@@ -530,16 +527,43 @@ function MiniDonut({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <ul className="flex-1 min-w-0 space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-            {top.map((d, i) => (
-              <li key={i} className="flex items-center gap-2 text-xs">
-                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PALETTE[i % PALETTE.length] }} />
-                <span className="text-slate-600 truncate flex-1">{d.name}</span>
-                <span className="text-ink font-semibold tabular-nums">{Math.round((d.value / total) * 100)}%</span>
-              </li>
-            ))}
+
+          {/* legenda embaixo (paginada, sem scroll) */}
+          <ul className="mt-3 space-y-1.5">
+            {pageItems.map((d, idx) => {
+              const gi = (cur - 1) * PER + idx;
+              return (
+                <li key={gi} className="flex items-center gap-2 text-xs">
+                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PALETTE[gi % PALETTE.length] }} />
+                  <span className="text-slate-600 truncate flex-1">{d.name}</span>
+                  <span className="text-ink font-semibold tabular-nums">{Math.round((d.value / total) * 100)}%</span>
+                </li>
+              );
+            })}
           </ul>
-        </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <button
+                disabled={cur <= 1}
+                onClick={() => setPage(cur - 1)}
+                className="grid place-items-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40 hover:text-ink transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-slate-400 tabular-nums">
+                {cur} / {totalPages}
+              </span>
+              <button
+                disabled={cur >= totalPages}
+                onClick={() => setPage(cur + 1)}
+                className="grid place-items-center w-7 h-7 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40 hover:text-ink transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
