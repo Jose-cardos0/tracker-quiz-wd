@@ -2,7 +2,7 @@ import {
   getProjects,
   getOverview,
   getCheckoutCount,
-  getDailyStats,
+  getSessionsAgg,
   resolveRange,
 } from "@/lib/data";
 import RangeTabs from "@/components/RangeTabs";
@@ -21,10 +21,10 @@ export default async function DashboardPage({
 
   const funnels = await Promise.all(
     projects.map(async (p) => {
-      const [ov, ic, daily] = await Promise.all([
+      const [ov, ic, agg] = await Promise.all([
         getOverview(p.id, from, to),
         getCheckoutCount(p.id, from, to),
-        getDailyStats(p.id, from, to),
+        getSessionsAgg(p.id, from, to),
       ]);
       return {
         id: p.id,
@@ -34,7 +34,10 @@ export default async function DashboardPage({
         completed: ov.completed,
         ic,
         avgDurationMs: ov.avg_duration_ms,
-        daily,
+        daily: agg.daily,
+        bySource: agg.bySource,
+        byCountry: agg.byCountry,
+        campaigns: agg.campaigns,
       };
     })
   );

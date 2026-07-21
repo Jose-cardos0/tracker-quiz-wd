@@ -27,6 +27,13 @@ import {
 } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
 
+type NameCount = { name: string; sessions: number; completed: number };
+type CampaignAgg = {
+  source: string;
+  campaign: string;
+  sessions: number;
+  completed: number;
+};
 type Funnel = {
   id: string;
   name: string;
@@ -36,6 +43,9 @@ type Funnel = {
   ic: number;
   avgDurationMs: number | null;
   daily: { date: string; sessions: number; completed: number }[];
+  bySource: NameCount[];
+  byCountry: NameCount[];
+  campaigns: CampaignAgg[];
 };
 
 const PALETTE = [
@@ -148,6 +158,63 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
     [compare]
   );
 
+  // destaques: melhor conversão, melhor IC, maior volume (amostra mínima p/ ratio)
+  const destaques = useMemo(() => {
+    const withData = chosen.filter((f) => f.sessions > 0);
+    const enough = withData.filter((f) => f.sessions >= 10);
+    const pool = enough.length ? enough : withData;
+    const bestBy = (fn: (f: Funnel) => number) =>
+      pool.length ? pool.reduce((a, b) => (fn(b) > fn(a) ? b : a)) : null;
+    return {
+      conv: bestBy((f) => f.completed / f.sessions),
+      ic: bestBy((f) => f.ic / f.sessions),
+      vol: withData.length
+        ? withData.reduce((a, b) => (b.sessions > a.sessions ? b : a))
+        : null,
+    };
+  }, [chosen]);
+
+  // origem e país agregados across selected
+  const mergeCount = (rows: NameCount[][]) => {
+    const m = new Map<string, number>();
+    for (const list of rows)
+      for (const r of list) m.set(r.name, (m.get(r.name) || 0) + r.sessions);
+    return [...m.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+  const bySource = useMemo(
+    () => mergeCount(chosen.map((f) => f.bySource)),
+    [chosen]
+  );
+  const byCountry = useMemo(
+    () => mergeCount(chosen.map((f) => f.byCountry)),
+    [chosen]
+  );
+
+  // ranking de campanhas cruzado entre os funis selecionados
+  const campaigns = useMemo(() => {
+    const m = new Map<
+      string,
+      { source: string; campaign: string; sessions: number; completed: number }
+    >();
+    for (const f of chosen)
+      for (const c of f.campaigns) {
+        const k = `${c.source}|||${c.campaign}`;
+        const e =
+          m.get(k) || {
+            source: c.source,
+            campaign: c.campaign,
+            sessions: 0,
+            completed: 0,
+          };
+        e.sessions += c.sessions;
+        e.completed += c.completed;
+        m.set(k, e);
+      }
+    return [...m.values()].sort((a, b) => b.sessions - a.sessions);
+  }, [chosen]);
+
   if (funnels.length === 0) {
     return (
       <div className="card card-pad text-center py-16 text-slate-400">
@@ -223,6 +290,28 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
             <Kpi icon={Target} label="Conclusão" value={pct(agg.completed, agg.sessions)} sub={`${agg.completed.toLocaleString("pt-BR")} concl.`} grad="from-emerald-500 to-teal-500" />
             <Kpi icon={ShoppingCart} label="Iniciou checkout" value={pct(agg.ic, agg.sessions)} sub={`${agg.ic.toLocaleString("pt-BR")} IC`} grad="from-orange-500 to-amber-500" />
             <Kpi icon={Clock} label="Tempo médio" value={fmtDuration(agg.avgDur)} grad="from-fuchsia-500 to-pink-500" />
+          </div>
+
+          {/* destaques */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <Highlight
+              tone="emerald"
+              label="Melhor conversão"
+              funnel={destaques.conv}
+              metric={(f) => pct(f.completed, f.sessions)}
+            />
+            <Highlight
+              tone="orange"
+              label="Melhor checkout (IC)"
+              funnel={destaques.ic}
+              metric={(f) => pct(f.ic, f.sessions)}
+            />
+            <Highlight
+              tone="brand"
+              label="Maior volume"
+              funnel={destaques.vol}
+              metric={(f) => `${f.sessions.toLocaleString("pt-BR")} sessões`}
+            />
           </div>
 
           {/* sessões por dia */}
@@ -311,9 +400,159 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
               )}
             </section>
           </div>
+
+          {/* origem + país agregados */}
+          <div className="grid lg:grid-cols-2 gap-6 mt-6">
+            <MiniDonut
+              title="Origem das sessões"
+              subtitle="De onde vêm — somando os funis."
+              data={bySource}
+            />
+            <MiniDonut
+              title="Por país"
+              subtitle="Distribuição geográfica agregada."
+              data={byCountry}
+            />
+          </div>
+
+          {/* ranking de campanhas cruzado */}
+          <section className="card card-pad mt-6">
+            <h3 className="font-bold text-ink mb-1">Ranking de campanhas</h3>
+            <p className="text-[13px] text-slate-400 mb-3">
+              Campanhas somadas entre os funis selecionados — onde o dinheiro
+              converte mais.
+            </p>
+            {campaigns.length === 0 ? (
+              <p className="text-sm text-slate-400 py-8 text-center">
+                Sem campanhas com etiqueta no período.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[560px]">
+                  <thead>
+                    <tr className="text-left text-[11px] text-slate-400 uppercase tracking-wide border-b border-slate-100">
+                      <th className="py-2 px-2 font-semibold">#</th>
+                      <th className="py-2 px-2 font-semibold">Origem</th>
+                      <th className="py-2 px-2 font-semibold">Campanha</th>
+                      <th className="py-2 px-2 font-semibold text-right">Sessões</th>
+                      <th className="py-2 px-2 font-semibold text-right">Concluíram</th>
+                      <th className="py-2 px-2 font-semibold text-right">Conversão</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campaigns.slice(0, 20).map((c, i) => (
+                      <tr key={i} className="border-t border-slate-100">
+                        <td className="py-2.5 px-2 text-slate-400 tabular-nums">{i + 1}</td>
+                        <td className="py-2.5 px-2 font-semibold text-ink">{c.source}</td>
+                        <td className="py-2.5 px-2 text-slate-600 max-w-[280px] truncate" title={c.campaign}>
+                          {c.campaign}
+                        </td>
+                        <td className="py-2.5 px-2 text-right tabular-nums text-ink font-semibold">
+                          {c.sessions.toLocaleString("pt-BR")}
+                        </td>
+                        <td className="py-2.5 px-2 text-right tabular-nums text-slate-600">
+                          {c.completed.toLocaleString("pt-BR")}
+                        </td>
+                        <td className="py-2.5 px-2 text-right tabular-nums font-semibold text-brand-600">
+                          {pct(c.completed, c.sessions)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {campaigns.length > 20 && (
+                  <p className="text-xs text-slate-400 mt-3 text-center">
+                    Mostrando top 20 de {campaigns.length} campanhas.
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
         </>
       )}
     </div>
+  );
+}
+
+function Highlight({
+  tone,
+  label,
+  funnel,
+  metric,
+}: {
+  tone: "emerald" | "orange" | "brand";
+  label: string;
+  funnel: Funnel | null;
+  metric: (f: Funnel) => string;
+}) {
+  const tones: Record<string, string> = {
+    emerald: "from-emerald-500 to-teal-500",
+    orange: "from-orange-500 to-amber-500",
+    brand: "from-indigo-500 to-violet-500",
+  };
+  return (
+    <div className="card card-pad relative overflow-hidden">
+      <div className={`absolute -right-8 -top-8 w-28 h-28 rounded-full bg-gradient-to-br ${tones[tone]} opacity-[0.08]`} />
+      <div className="stat-label">{label}</div>
+      {funnel ? (
+        <>
+          <div className="text-[22px] font-black tracking-tight text-ink mt-1 leading-none">
+            {metric(funnel)}
+          </div>
+          <div className="text-[13px] text-slate-500 mt-1.5 truncate" title={funnel.name}>
+            {funnel.name}
+          </div>
+        </>
+      ) : (
+        <div className="text-slate-400 text-sm mt-2">—</div>
+      )}
+    </div>
+  );
+}
+
+function MiniDonut({
+  title,
+  subtitle,
+  data,
+}: {
+  title: string;
+  subtitle: string;
+  data: { name: string; value: number }[];
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const top = data.slice(0, 8);
+  return (
+    <section className="card card-pad">
+      <h3 className="font-bold text-ink mb-1">{title}</h3>
+      <p className="text-[13px] text-slate-400 mb-3">{subtitle}</p>
+      {total === 0 ? (
+        <p className="text-sm text-slate-400 py-8 text-center">Sem dados.</p>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="w-[140px] h-[140px] shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={top} dataKey="value" nameKey="name" innerRadius={42} outerRadius={68} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                  {top.map((_, i) => (
+                    <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <ul className="flex-1 min-w-0 space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+            {top.map((d, i) => (
+              <li key={i} className="flex items-center gap-2 text-xs">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PALETTE[i % PALETTE.length] }} />
+                <span className="text-slate-600 truncate flex-1">{d.name}</span>
+                <span className="text-ink font-semibold tabular-nums">{Math.round((d.value / total) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

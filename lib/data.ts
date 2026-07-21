@@ -220,32 +220,86 @@ export async function getFunnel(
 }
 
 export type DailyStat = { date: string; sessions: number; completed: number };
+export type NameCount = { name: string; sessions: number; completed: number };
+export type CampaignAgg = {
+  source: string;
+  campaign: string;
+  sessions: number;
+  completed: number;
+};
+export type SessionsAgg = {
+  daily: DailyStat[];
+  bySource: NameCount[];
+  byCountry: NameCount[];
+  campaigns: CampaignAgg[];
+};
 
-/** Sessões por dia (e concluídas) de um projeto no período — base do dashboard geral. */
-export async function getDailyStats(
+/**
+ * Uma leitura só das sessões do projeto no período, derivando tudo que o
+ * dashboard geral precisa: série diária, origem, país e campanhas. Evita
+ * varrer a tabela várias vezes por funil.
+ */
+export async function getSessionsAgg(
   id: string,
   from: string,
   to: string
-): Promise<DailyStat[]> {
+): Promise<SessionsAgg> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("sessions")
-    .select("started_at,completed")
+    .select("started_at,completed,country,utm,cid,referrer")
     .eq("project_id", id)
     .gte("started_at", from)
     .lt("started_at", to)
     .limit(50000);
-  const m = new Map<string, { sessions: number; completed: number }>();
-  for (const s of (data as any[]) || []) {
-    const d = String(s.started_at).slice(0, 10);
-    const e = m.get(d) || { sessions: 0, completed: 0 };
+
+  const daily = new Map<string, { sessions: number; completed: number }>();
+  const src = new Map<string, { sessions: number; completed: number }>();
+  const ctry = new Map<string, { sessions: number; completed: number }>();
+  const camp = new Map<string, { sessions: number; completed: number }>();
+  const bump = (
+    m: Map<string, { sessions: number; completed: number }>,
+    k: string,
+    done: boolean
+  ) => {
+    const e = m.get(k) || { sessions: 0, completed: 0 };
     e.sessions++;
-    if (s.completed) e.completed++;
-    m.set(d, e);
+    if (done) e.completed++;
+    m.set(k, e);
+  };
+
+  for (const s of (data as any[]) || []) {
+    const done = !!s.completed;
+    const source = inferSource(s.utm, s.referrer);
+    bump(daily, String(s.started_at).slice(0, 10), done);
+    bump(src, source, done);
+    bump(ctry, s.country || "??", done);
+    const campaign = smartDecode((s.utm && s.utm.utm_campaign) || "");
+    if (campaign) bump(camp, `${source}|||${campaign}`, done);
   }
-  return [...m.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, v]) => ({ date, ...v }));
+
+  const list = (m: Map<string, { sessions: number; completed: number }>) =>
+    [...m.entries()]
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.sessions - a.sessions);
+
+  return {
+    daily: [...daily.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, v]) => ({ date, ...v })),
+    bySource: list(src),
+    byCountry: list(ctry),
+    campaigns: [...camp.entries()]
+      .map(([k, v]) => {
+        const i = k.indexOf("|||");
+        return {
+          source: k.slice(0, i),
+          campaign: k.slice(i + 3),
+          ...v,
+        };
+      })
+      .sort((a, b) => b.sessions - a.sessions),
+  };
 }
 
 /** Nº de sessões que iniciaram checkout (evento checkout_redirect) no período. */
