@@ -219,6 +219,35 @@ export async function getFunnel(
   }));
 }
 
+export type DailyStat = { date: string; sessions: number; completed: number };
+
+/** Sessões por dia (e concluídas) de um projeto no período — base do dashboard geral. */
+export async function getDailyStats(
+  id: string,
+  from: string,
+  to: string
+): Promise<DailyStat[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("sessions")
+    .select("started_at,completed")
+    .eq("project_id", id)
+    .gte("started_at", from)
+    .lt("started_at", to)
+    .limit(50000);
+  const m = new Map<string, { sessions: number; completed: number }>();
+  for (const s of (data as any[]) || []) {
+    const d = String(s.started_at).slice(0, 10);
+    const e = m.get(d) || { sessions: 0, completed: 0 };
+    e.sessions++;
+    if (s.completed) e.completed++;
+    m.set(d, e);
+  }
+  return [...m.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, v]) => ({ date, ...v }));
+}
+
 /** Nº de sessões que iniciaram checkout (evento checkout_redirect) no período. */
 export async function getCheckoutCount(
   id: string,
