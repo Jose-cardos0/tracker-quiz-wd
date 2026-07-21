@@ -22,10 +22,10 @@ import {
   Target,
   ShoppingCart,
   Clock,
-  Check,
   type LucideIcon,
 } from "lucide-react";
 import { pct, fmtDuration } from "@/lib/format";
+import FunnelPicker from "@/components/FunnelPicker";
 
 type NameCount = { name: string; sessions: number; completed: number };
 type CampaignAgg = {
@@ -96,15 +96,6 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
     () => funnels.filter((f) => selSet.has(f.id)),
     [funnels, selSet]
   );
-
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const base = prev ?? allIds;
-      return base.includes(id)
-        ? base.filter((x) => x !== id)
-        : [...base, id];
-    });
-  }
 
   // ---- agregações --------------------------------------------------------
   const agg = useMemo(() => {
@@ -225,56 +216,13 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
 
   return (
     <div>
-      {/* seletor de funis */}
-      <div className="card card-pad mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-ink text-sm">
-            Funis no cruzamento{" "}
-            <span className="text-slate-400 font-semibold">
-              ({chosen.length}/{funnels.length})
-            </span>
-          </h3>
-          <div className="flex items-center gap-3 text-sm font-semibold">
-            <button
-              onClick={() => setSelected(allIds)}
-              className="text-brand-600 hover:underline"
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setSelected([])}
-              className="text-slate-400 hover:text-ink"
-            >
-              Limpar
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {funnels.map((f, i) => {
-            const on = selSet.has(f.id);
-            return (
-              <button
-                key={f.id}
-                onClick={() => toggle(f.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-xs font-semibold border transition ${
-                  on
-                    ? "border-transparent text-white"
-                    : "border-slate-200 bg-white text-slate-500 hover:text-ink"
-                }`}
-                style={on ? { background: PALETTE[i % PALETTE.length] } : undefined}
-              >
-                <span
-                  className={`grid place-items-center w-4 h-4 rounded-full ${
-                    on ? "bg-white/25" : "bg-slate-100"
-                  }`}
-                >
-                  {on && <Check className="w-3 h-3" strokeWidth={3} />}
-                </span>
-                <span className="max-w-[190px] truncate">{f.name}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* seletor de funis (popup com lupa) */}
+      <div className="mb-6">
+        <FunnelPicker
+          funnels={funnels.map((f) => ({ id: f.id, name: f.name }))}
+          value={sel}
+          onChange={(ids) => setSelected(ids)}
+        />
       </div>
 
       {chosen.length === 0 ? (
@@ -292,25 +240,30 @@ export default function DashboardClient({ funnels }: { funnels: Funnel[] }) {
             <Kpi icon={Clock} label="Tempo médio" value={fmtDuration(agg.avgDur)} grad="from-fuchsia-500 to-pink-500" />
           </div>
 
-          {/* destaques */}
+          {/* destaques — prioridade: IC > conversão > volume */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <Highlight
-              tone="emerald"
-              label="Melhor conversão"
-              funnel={destaques.conv}
-              metric={(f) => pct(f.completed, f.sessions)}
-            />
-            <Highlight
               tone="orange"
+              rank={1}
               label="Melhor checkout (IC)"
               funnel={destaques.ic}
               metric={(f) => pct(f.ic, f.sessions)}
+              sub={(f) => `${f.ic.toLocaleString("pt-BR")} IC · ${pct(f.completed, f.sessions)} concl.`}
+            />
+            <Highlight
+              tone="emerald"
+              rank={2}
+              label="Melhor conversão"
+              funnel={destaques.conv}
+              metric={(f) => pct(f.completed, f.sessions)}
+              sub={(f) => `${f.completed.toLocaleString("pt-BR")} concluíram`}
             />
             <Highlight
               tone="brand"
               label="Maior volume"
               funnel={destaques.vol}
-              metric={(f) => `${f.sessions.toLocaleString("pt-BR")} sessões`}
+              metric={(f) => `${f.sessions.toLocaleString("pt-BR")}`}
+              sub={() => "sessões no período"}
             />
           </div>
 
@@ -479,29 +432,50 @@ function Highlight({
   label,
   funnel,
   metric,
+  sub,
+  rank,
 }: {
   tone: "emerald" | "orange" | "brand";
   label: string;
   funnel: Funnel | null;
   metric: (f: Funnel) => string;
+  sub?: (f: Funnel) => string;
+  rank?: number;
 }) {
   const tones: Record<string, string> = {
     emerald: "from-emerald-500 to-teal-500",
     orange: "from-orange-500 to-amber-500",
     brand: "from-indigo-500 to-violet-500",
   };
+  const badge: Record<string, string> = {
+    emerald: "text-emerald-700 bg-emerald-100",
+    orange: "text-orange-700 bg-orange-100",
+    brand: "text-brand-700 bg-brand-100",
+  };
   return (
     <div className="card card-pad relative overflow-hidden">
       <div className={`absolute -right-8 -top-8 w-28 h-28 rounded-full bg-gradient-to-br ${tones[tone]} opacity-[0.08]`} />
-      <div className="stat-label">{label}</div>
+      <div className="flex items-center gap-1.5">
+        <span className="stat-label">{label}</span>
+        {rank && (
+          <span className={`text-[9px] font-bold uppercase tracking-wide rounded-full px-1.5 py-0.5 ${badge[tone]}`}>
+            prioridade {rank}
+          </span>
+        )}
+      </div>
       {funnel ? (
         <>
-          <div className="text-[22px] font-black tracking-tight text-ink mt-1 leading-none">
+          <div className="text-[22px] font-black tracking-tight text-ink mt-1.5 leading-none">
             {metric(funnel)}
           </div>
-          <div className="text-[13px] text-slate-500 mt-1.5 truncate" title={funnel.name}>
+          <div className="text-[13px] font-semibold text-slate-600 mt-1.5 truncate" title={funnel.name}>
             {funnel.name}
           </div>
+          {sub && (
+            <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+              {sub(funnel)}
+            </div>
+          )}
         </>
       ) : (
         <div className="text-slate-400 text-sm mt-2">—</div>
